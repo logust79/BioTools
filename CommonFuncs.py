@@ -90,7 +90,7 @@ def anno_kaviar(vars):
         positions = list(set([i['pos'] for i in chroms[c]]))
         while True:
             ind += 100
-            print ind
+            print 'process %s variants' % ind
             if ind > len(positions):
                 position = ', '.join(positions[ind-100:len(positions)])
                 br = 1
@@ -121,6 +121,7 @@ def anno_kaviar(vars):
     for v in vars:
         chrom,pos,ref,alt = v.split('-')
         end = int(pos)+len(ref)-1
-        match = [i for i in kaviar if i['Chrom'] == 'chr'+chrom and i['Position']==pos and i['Variant']==alt]
+        match = [i for i in kaviar if i['Chrom'] == 'chr'+chrom and i['Position']==pos and i['End'] == str(end) and i['Variant']==alt]
+        print match
         result[v] = float(match[0]['AF']) if match else None
     return result
