@@ -40,7 +40,6 @@ anno_exac('1-123-G-C')
 def anno_exac(v):
     rest_url = 'http://exac.hms.harvard.edu/rest'
     service = 'variant'
-    print v
     attempt = 5
     while attempt:
         try:
@@ -122,6 +121,5 @@ def anno_kaviar(vars):
         chrom,pos,ref,alt = v.split('-')
         end = int(pos)+len(ref)-1
         match = [i for i in kaviar if i['Chrom'] == 'chr'+chrom and i['Position']==pos and i['End'] == str(end) and i['Variant']==alt]
-        print match
         result[v] = float(match[0]['AF']) if match else None
     return result
