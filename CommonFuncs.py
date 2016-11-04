@@ -53,7 +53,7 @@ def anno_exac(v):
     exac_anno = r.json()
     if 'allele_freq' in exac_anno['variant']:
         return exac_anno['variant']['allele_freq']
-    if exac_anno['base_coverage'][0]['has_coverage']:
+    if exac_anno['base_coverage'] and exac_anno['base_coverage'][0]['has_coverage']:
         return 0
     return None
 
