@@ -51,12 +51,15 @@ def anno_exac(v):
             time.sleep(2)
     if r.status_code == 404: return None
     exac_anno = r.json()
+    return exac_anno
+    # good to return the json object
+'''
     if 'allele_freq' in exac_anno['variant']:
         return exac_anno['variant']['allele_freq']
     if exac_anno['base_coverage'] and exac_anno['base_coverage'][0]['has_coverage']:
         return 0
     return None
-
+'''
 '''
 this function queries kaviar for allele frequency
 it queries a chromosome at a time for multiple locations
