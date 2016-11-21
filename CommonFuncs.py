@@ -8,6 +8,7 @@ Some self use and common functions
 import time
 import requests
 from bs4 import BeautifulSoup
+import json
 
 '''
 this function cleans messy variant format
@@ -37,6 +38,7 @@ def clean_variant(v):
 use harvard's rest service to query ExAC_freq of a variant
 anno_exac('1-123-G-C')
 '''
+
 def anno_exac(v):
     rest_url = 'http://exac.hms.harvard.edu/rest'
     service = 'variant'
@@ -60,6 +62,35 @@ def anno_exac(v):
         return 0
     return None
 '''
+
+def anno_exac_bulk(vars):
+# chop into 100 chunks and send to exac annotation
+    vars_array = _chop_array(vars, size=100)
+    result = {}
+    for vs in vars_array:
+        result.update(_anno_exac_bulk_100(vs))
+    return result
+
+def _anno_exac_bulk_100(vars):
+    # limit to 100 variants
+    rest_url = 'http://exac.hms.harvard.edu/rest/bulk/variant'
+    attempt = 5
+    while attempt:
+        try:
+            r = requests.post(rest_url, data=json.dumps(vars))
+            break
+        except requests.ConnectionError:
+            print 'query exac connectionError, retry'
+            attempt -= 1
+            time.sleep(2)
+    if r.status_code == 404: return None
+    exac_anno = r.json()
+    return exac_anno
+
+def _chop_array(arr, size=100):
+    for i in xrange(0, len(arr), size):
+        yield arr[i:i + size]
+
 '''
 this function queries kaviar for allele frequency
 it queries a chromosome at a time for multiple locations
