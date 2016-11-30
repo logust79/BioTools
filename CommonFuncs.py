@@ -9,12 +9,27 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import json
+import pyliftover #pyliftover is slow!
 
 '''
-this function cleans messy variant format
+    liftover between different human genome builds, say hg38 to hg19
+'''
+def liftover(v, frm, to):
+    # note that pyliftover is 0 based
+    # First frm-to pair may take time to download the data from UCSC
+    # return a list of tuple.
+    lo = pyliftover.LiftOver(frm, to)
+    chrom,pos,ref,alt = v.split('-')
+    results = lo.convert_coordinate('chr'+chrom, int(pos)-1)
+    if not results:
+        return []
+    return ['-'.join([i[0][3:],str(i[1]+1),ref,alt]) for i in results]
+
+'''
+    this function cleans messy variant format
     var = '1-94512001-GTT-GAT'
     print clean_variant(var)
-prints
+    prints
     1-94512002-T-A
 '''
 def clean_variant(v):
@@ -117,10 +132,10 @@ def anno_kaviar(vars):
         'pos':''
     }
     kaviar = []
-    ind=0
     br=0
     for c in chroms:
         positions = list(set([i['pos'] for i in chroms[c]]))
+        ind = 0
         while True:
             ind += 100
             print 'process %s variants' % ind
@@ -131,6 +146,7 @@ def anno_kaviar(vars):
                 position = ', '.join(positions[ind-100:ind])
             args['pos'] = position
             args['chr'] = c
+            print args
             r = requests.get(uri,params=args)
             # parse it
             soup = BeautifulSoup(r.content, 'html.parser')
