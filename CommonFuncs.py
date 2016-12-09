@@ -9,6 +9,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import json
+import mygene
 import pyliftover #pyliftover is slow!
 
 '''
@@ -173,3 +174,7 @@ def anno_kaviar(vars):
         match = [i for i in kaviar if i['Chrom'] == 'chr'+chrom and i['Position']==pos and i['End'] == str(end) and i['Variant']==alt]
         result[v] = float(match[0]['AF']) if match else None
     return result
+
+def my_gene(gene_id):
+    mg = mygene.MyGeneInfo()
+    return mg.getgene(gene_id,fields='all')

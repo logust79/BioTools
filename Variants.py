@@ -1,6 +1,7 @@
 import logging
 import sqlite3
 from CommonFuncs import *
+from sqlite_utils import *
 import copy
 
 def _initiate_db(db_conn):
@@ -8,29 +9,6 @@ def _initiate_db(db_conn):
     db_c.execute('''CREATE TABLE IF NOT EXISTS variants
         (id text PRIMARY KEY, exac text, kaviar_af real, cadd_phred real)''')
     db_conn.commit()
-
-def _update_db(db_conn,table,field,value_dict):
-    # update database
-    db_c = db_conn.cursor()
-    remain_fields = list(set(['exac','kaviar_af','cadd_phred'])-set([field]))
-    for k,v in value_dict.iteritems():
-        db_c.execute('''INSERT OR REPLACE INTO %(table)s (id, %(field)s, %(f1)s, %(f2)s)
-            VALUES (  ?,
-            ?,
-            (SELECT %(f1)s FROM variants WHERE id = ?),
-            (SELECT %(f2)s FROM variants WHERE id = ?)
-            )''' % {'table':table,'field':field,'f1':remain_fields[0],'f2':remain_fields[1]}, (k,v,k,k))
-    db_conn.commit()
-
-
-def _dict_factory(cursor, row):
-    # convert from sqlite tuple to dictionary
-    # if row is None, return None
-    if row == None: return None
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
 
 def _liftover(variant, frm, to):
     # a wrap over CommonFuncs liftover, add some warnings
@@ -82,17 +60,17 @@ class Variant(object):
         if getattr(self, '_exac', None) is None:
             db_c = self.db_conn.cursor()
             db_c.execute('SELECT * FROM variants WHERE id=?',(self._v,))
-            db_var = _dict_factory(db_c,db_c.fetchone())
+            db_var = dict_factory(db_c,db_c.fetchone())
             if db_var == None or db_var['exac'] == None:
                 # query web
                 print 'querying the web for exac'
                 exac = anno_exac(self._v)
                 # insert into database
-                _update_db(
+                update_db(
                            self.db_conn,
                            'variants',
-                           'exac',
-                           {self._v:json.dumps(exac,indent=4)}
+                           ['exac'],
+                           {self._v:[json.dumps(exac,indent=4)]}
                            )
             else:
                 exac = json.loads(db_var['exac'])
@@ -108,18 +86,18 @@ class Variant(object):
         if getattr(self, '_kaviar_af', None) is None:
             db_c = self.db_conn.cursor()
             db_c.execute('SELECT * FROM variants WHERE id=?',(self._v,))
-            db_var = _dict_factory(db_c,db_c.fetchone())
+            db_var = dict_factory(db_c,db_c.fetchone())
             if db_var == None or db_var['kaviar_af'] == None:
                 # query web
                 print 'querying the web for kaviar'
                 kaviar_af = anno_kaviar([self._v])[0]
                 if kaviar_af == None: kaviar_af = -1
                 # insert into database
-                _update_db(
+                update_db(
                            self.db_conn,
                            'variants',
-                           'kaviar_af',
-                           {self._v:kaviar_af}
+                           ['kaviar_af'],
+                           {self._v:[kaviar_af]}
                            )
             else:
                 kaviar_af = json.loads(db_var['kaviar_af'])
@@ -132,7 +110,7 @@ class Variant(object):
         if getattr(self, '_cadd_phred', None) is None:
             db_c = self.db_conn.cursor()
             db_c.execute('SELECT * FROM variants WHERE id=?',(self._v,))
-            db_var = _dict_factory(db_c,db_c.fetchone())
+            db_var = dict_factory(db_c,db_c.fetchone())
             cadd_phred = None
             if db_var == None or db_var['cadd_phred'] == None:
                 if getattr(self,'cadd_file', None) is None:
@@ -147,11 +125,11 @@ class Variant(object):
                         logging.warning(self.variant_id+' not found in cadd file provided')
                     else:
                         # write to db
-                        _update_db(
+                        update_db(
                             self.db_conn,
                             'variants',
-                            'cadd_phred',
-                            {self._v:cadd_phred}
+                            ['cadd_phred'],
+                            {self._v:[cadd_phred]}
                             )
             else:
                 cadd_phred = db_var['cadd_phred']
@@ -188,7 +166,7 @@ class Variants:
             new_vars = {}
             exac = {}
             for i in result:
-                temp = _dict_factory(db_c,i)
+                temp = dict_factory(db_c,i)
                 data[temp['id']] = json.loads(temp['exac'])
             for k,v in self._v.iteritems():
                 if v in data and data[v] != None:
@@ -200,11 +178,11 @@ class Variants:
                 print 'querying web'
                 new_result = anno_exac_bulk(new_vars.values())
                 # update database
-                _update_db(
+                update_db(
                            self.db_conn,
                            'variants',
-                           'exac',
-                           {k:json.dumps(v,indent=4) for k,v in new_result.iteritems()}
+                           ['exac'],
+                           {k:[json.dumps(v,indent=4)] for k,v in new_result.iteritems()}
                            )
                 # populate exac
                 for k,v in new_vars.iteritems():
@@ -225,7 +203,7 @@ class Variants:
             new_vars = {}
             kaviar = {}
             for i in result:
-                temp = _dict_factory(db_c,i)
+                temp = dict_factory(db_c,i)
                 data[temp['id']] = temp['kaviar_af']
             for k,v in self._v.iteritems():
                 if v in data and data[v] != None:
@@ -240,11 +218,11 @@ class Variants:
                 for k in new_result:
                     if new_result[k] == None: new_result[k] = -1
                 # update database
-                _update_db(
+                update_db(
                            self.db_conn,
                            'variants',
-                           'kaviar_af',
-                           {k:v for k,v in new_result.iteritems()}
+                           ['kaviar_af'],
+                           {k:[v] for k,v in new_result.iteritems()}
                            )
                 # populate kaviar_af
                 for k,v in new_vars.iteritems():
@@ -264,7 +242,7 @@ class Variants:
             new_vars = {}
             cadd_phred = {}
             for i in result:
-                temp = _dict_factory(db_c, i)
+                temp = dict_factory(db_c, i)
                 data[temp['id']] = temp['cadd_phred']
             for k,v in self._v.iteritems():
                 if v in data and data[v] != None:
@@ -286,11 +264,11 @@ class Variants:
                             new_result[v] = self._cadd_data[v]
                         cadd_phred[k] = self._cadd_data.get(v,None)
                     # update database
-                    _update_db(
+                    update_db(
                         self.db_conn,
                         'variants',
-                        'cadd_phred',
-                        {k:v for k,v in new_result.iteritems()}
+                        ['cadd_phred'],
+                        {k:[v] for k,v in new_result.iteritems()}
                         )
             self._cadd_phred = cadd_phred
         return self._cadd_phred
