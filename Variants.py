@@ -158,10 +158,7 @@ class Variants:
         #   use CommonFuncs to annotate exac, then store in database
         if getattr(self, '_exac', None) is None:
             # check database
-            db_c = self.db_conn.cursor()
-            sql="select * from variants where id in ({seq})".format(
-                    seq=','.join(['?']*len(self.variants)))
-            result = db_c.execute(sql,self._v.values())
+            result = batch_query(self.db_conn,'variants',self._v.values())
             data = {}
             new_vars = {}
             exac = {}
@@ -196,9 +193,7 @@ class Variants:
         if getattr(self, '_kaviar_af', None) is None:
             # check database
             db_c = self.db_conn.cursor()
-            sql="select * from variants where id in ({seq})".format(
-                    seq=','.join(['?']*len(self.variants)))
-            result = db_c.execute(sql,self._v.values())
+            result = batch_query(self.db_conn,'variants',self._v.values())
             data = {}
             new_vars = {}
             kaviar = {}
@@ -235,9 +230,7 @@ class Variants:
         if getattr(self, '_cadd_phred', None) is None:
             # check database
             db_c = self.db_conn.cursor()
-            sql="select * from variants where id in ({seq})".format(
-                    seq=','.join(['?']*len(self.variants)))
-            result = db_c.execute(sql,self._v.values())
+            result = batch_query(self.db_conn,'variants',self._v.values())
             data = {}
             new_vars = {}
             cadd_phred = {}

@@ -178,3 +178,6 @@ def anno_kaviar(vars):
 def my_gene(gene_id):
     mg = mygene.MyGeneInfo()
     return mg.getgene(gene_id,fields='all')
+def my_genes(gene_ids):
+    mg = mygene.MyGeneInfo()
+    return mg.getgenes(gene_ids,fields='all')
