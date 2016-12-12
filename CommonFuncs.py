@@ -13,6 +13,24 @@ import mygene
 import pyliftover #pyliftover is slow!
 
 '''
+    request ensembl for bases based on location
+'''
+def find_bases(chrom,start,end=None,build='hg19',strand=1):
+    # translate build
+    if build=='hg19':
+        build = 'grch37'
+    elif build=='hg38':
+        build = 'grch38'
+    end = end or start
+    server = "http://%s.rest.ensembl.org" % build
+    ext = '''/sequence/region/human/%(chrom)s:%(start)s..%(end)s:%(strand)s''' % locals()
+    r = requests.get(server+ext, headers={'Content-Type':'application/json' })
+    if not r.ok:
+        return r.raise_for_status()
+    decoded = r.json()
+    return str(decoded['seq'])
+
+'''
     liftover between different human genome builds, say hg38 to hg19
 '''
 def liftover(v, frm, to):
@@ -33,12 +51,29 @@ def liftover(v, frm, to):
     prints
     1-94512002-T-A
 '''
-def clean_variant(v):
+def clean_variant(v,build='hg19'):
     # sometimes variant has funny format, which has more - than expected, such as 1-117122294---TCT.
-    #  return as it is
-    if v.count('-') != 3: return v
-    chrom,pos,ref,alt = v.split('-')
-    pos = int(pos)
+    #  use find_bases to fill in the gap
+    if v.count('-') == 4:
+        if v[-1] == '-':
+            # deletion
+            chrom,pos,ref,rubbish,rubbish = v.split('-')
+            pos = int(pos)
+            common_base = find_bases(chrom,pos,build=build)
+            pos = pos - 1
+            ref = common_base + ref
+            alt = common_base
+        else:
+            # insertion
+            chrom,pos,ref,rubbish,alt = v.split('-')
+            pos = int(pos)
+            common_base = find_bases(chrom,pos,build=build)
+            pos = pos - 1
+            ref = common_base
+            alt = common_base + alt
+    else:
+        chrom,pos,ref,alt = v.split('-')
+        pos = int(pos)
     if len(ref) < len(alt):
         ran = range(len(ref))
     else:
@@ -87,6 +122,7 @@ def anno_exac_bulk(vars):
     vars_array = _chop_array(vars, size=100)
     result = {}
     for vs in vars_array:
+        print vs
         result.update(_anno_exac_bulk_100(vs))
     return result
 

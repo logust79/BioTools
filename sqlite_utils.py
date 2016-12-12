@@ -25,7 +25,8 @@ def update_db(db_conn,table,fields,value_dict):
     sql += ') VALUES ( '
     sql += '?, '*len(fields)
     sql += '?'
-    sql += ','.join(['(SELECT %s FROM %s WHERE id = ?)' % (f, table) for f in remain_fields])
+    if remain_fields:
+        sql += ',' + ','.join(['(SELECT %s FROM %s WHERE id = ?)' % (f, table) for f in remain_fields])
     sql += ')'
     # update
     print sql

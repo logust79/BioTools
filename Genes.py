@@ -213,7 +213,7 @@ class Genes(object):
                 data[temp['id']] = temp['mis_z']
             for g in self.gene_ids:
                 if g in data and data[g] != None:
-                    pLI[g] = data[g]
+                    mis_z[g] = data[g]
                 else:
                     new_genes.append(g)
             if new_genes:

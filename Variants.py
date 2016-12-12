@@ -125,6 +125,7 @@ class Variant(object):
                         logging.warning(self.variant_id+' not found in cadd file provided')
                     else:
                         # write to db
+                        print 'write cadd_phred to database'
                         update_db(
                             self.db_conn,
                             'variants',
@@ -158,7 +159,8 @@ class Variants:
         #   use CommonFuncs to annotate exac, then store in database
         if getattr(self, '_exac', None) is None:
             # check database
-            result = batch_query(self.db_conn,'variants',self._v.values())
+            db_c = self.db_conn.cursor()
+            result = batch_query(db_c,'variants',self._v.values())
             data = {}
             new_vars = {}
             exac = {}
@@ -184,7 +186,7 @@ class Variants:
                 # populate exac
                 for k,v in new_vars.iteritems():
                     exac[k] = new_result[v]
-        self._exac = exac
+            self._exac = exac
         return self._exac
 
     @property
@@ -193,7 +195,7 @@ class Variants:
         if getattr(self, '_kaviar_af', None) is None:
             # check database
             db_c = self.db_conn.cursor()
-            result = batch_query(self.db_conn,'variants',self._v.values())
+            result = batch_query(db_c,'variants',self._v.values())
             data = {}
             new_vars = {}
             kaviar = {}
@@ -222,7 +224,7 @@ class Variants:
                 # populate kaviar_af
                 for k,v in new_vars.iteritems():
                     kaviar[k] = new_result[v]
-        self._kaviar_af = kaviar
+            self._kaviar_af = kaviar
         return self._kaviar_af
 
     @property
@@ -230,7 +232,7 @@ class Variants:
         if getattr(self, '_cadd_phred', None) is None:
             # check database
             db_c = self.db_conn.cursor()
-            result = batch_query(self.db_conn,'variants',self._v.values())
+            result = batch_query(db_c,'variants',self._v.values())
             data = {}
             new_vars = {}
             cadd_phred = {}
@@ -257,6 +259,7 @@ class Variants:
                             new_result[v] = self._cadd_data[v]
                         cadd_phred[k] = self._cadd_data.get(v,None)
                     # update database
+                    print 'write cadd to database'
                     update_db(
                         self.db_conn,
                         'variants',
