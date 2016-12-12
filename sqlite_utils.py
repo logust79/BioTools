@@ -29,7 +29,6 @@ def update_db(db_conn,table,fields,value_dict):
         sql += ',' + ','.join(['(SELECT %s FROM %s WHERE id = ?)' % (f, table) for f in remain_fields])
     sql += ')'
     # update
-    print sql
     for k,v in value_dict.iteritems():
         db_c.execute(sql, (k,)+tuple(v)+tuple([k]*len(remain_fields)))
     db_conn.commit()
