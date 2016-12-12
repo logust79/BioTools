@@ -34,6 +34,9 @@ def liftover(v, frm, to):
     1-94512002-T-A
 '''
 def clean_variant(v):
+    # sometimes variant has funny format, which has more - than expected, such as 1-117122294---TCT.
+    #  return as it is
+    if v.count('-') != 3: return v
     chrom,pos,ref,alt = v.split('-')
     pos = int(pos)
     if len(ref) < len(alt):

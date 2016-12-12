@@ -15,21 +15,30 @@ def _update_db(db_conn, mgs):
     # a wrapper of sqlite_utils.update_db for genes
     fields = ['pLI','mis_z','genomic_pos_hg19','genomic_pos','symbol','alias']
     # transform mgs to a dict
-    mgs = {i['ensembl']['gene']:[
-            i['exac']['all']['p_li'], #pLI
-            i['exac']['all']['mis_z'], #mis_z
-            json.dumps(i['genomic_pos_hg19'],indent=4), #genomic_pos_hg19
-            json.dumps(i['genomic_pos'],indent=4), #genomic_pos
-            i['symbol'],
-            json.dumps(i['alias'],indent=4), #alias
-        ] for i in mgs}
+    data = {}
+    for i in mgs:
+        genes = []
+        if isinstance(i['ensembl'], list):
+            # sometimes ensembl returns a list, each element corresponds to a gene_id
+            genes = [j['gene'] for j in i['ensembl']]
+        else:
+            genes = [i['ensembl']['gene']]
+        for g in genes:
+            data[g] = [
+                i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
+                i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1, #mis_z
+                json.dumps(i['genomic_pos_hg19'],indent=4), #genomic_pos_hg19
+                json.dumps(i['genomic_pos'],indent=4), #genomic_pos
+                i['symbol'],
+                json.dumps(i.get('alias',[]),indent=4), #alias
+            ]
     # update
     print mgs
     update_db(
             db_conn,
             'genes',
             fields,
-            mgs
+            data
             )
 
 class Gene(object):
@@ -152,7 +161,7 @@ class Genes(object):
     def __init__(self, db_conn, gene_ids=[]):
         # gene_id ok?
         for gene_id in gene_ids:
-            if gene_id[:4] != 'ENSG': raise ValueError('gene_id has to be an Ensembl id, such as ENSG00000050453')
+            if gene_id[:4] != 'ENSG': raise ValueError('gene_id has to be an Ensembl id, such as ENSG00000050453. (%s)' % gene_id)
         _initiate_db(db_conn)
         self.db_conn = db_conn
         self.gene_ids = gene_ids
@@ -180,7 +189,13 @@ class Genes(object):
                 # update database
                 _update_db(self.db_conn,new_result)
                 for i in new_result:
-                    pLI[i['ensembl']['gene']] = i['exac']['all']['p_li']
+                    genes = []
+                    if isinstance(i['ensembl'], list):
+                        genes = [j['gene'] for j in i['ensembl']]
+                    else:
+                        genes = [i['ensembl']['gene']]
+                    for g in genes:
+                        pLI[g] = i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1
             self._pLI = pLI
         return self._pLI
 
@@ -207,7 +222,13 @@ class Genes(object):
                 # update database
                 _update_db(self.db_conn,new_result)
                 for i in new_result:
-                    mis_z[i['ensembl']['gene']] = i['exac']['all']['mis_z']
+                    genes = []
+                    if isinstance(i['ensembl'], list):
+                        genes = [j['gene'] for j in i['ensembl']]
+                    else:
+                        genes = [i['ensembl']['gene']]
+                    for g in genes:
+                        mis_z[g] = i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1
             self._mis_z = mis_z
         return self._mis_z
 
@@ -234,7 +255,13 @@ class Genes(object):
                 # update database
                 _update_db(self.db_conn,new_result)
                 for i in new_result:
-                    gp19[i['ensembl']['gene']] = i['genomic_pos_hg19']
+                    genes = []
+                    if isinstance(i['ensembl'], list):
+                        genes = [j['gene'] for j in i['ensembl']]
+                    else:
+                        genes = [i['ensembl']['gene']]
+                    for g in genes:
+                        gp19[g] = i['genomic_pos_hg19']
             self._gp19 = gp19
         return self._gp19
 
@@ -261,7 +288,13 @@ class Genes(object):
                 # update database
                 _update_db(self.db_conn,new_result)
                 for i in new_result:
-                    gp[i['ensembl']['gene']] = i['genomic_pos']
+                    genes = []
+                    if isinstance(i['ensembl'], list):
+                        genes = [j['gene'] for j in i['ensembl']]
+                    else:
+                        genes = [i['ensembl']['gene']]
+                    for g in genes:
+                        gp[g] = i['genomic_pos']
             self._gp = gp
         return self._gp
     
@@ -288,7 +321,13 @@ class Genes(object):
                 # update database
                 _update_db(self.db_conn,new_result)
                 for i in new_result:
-                    symbol[i['ensembl']['gene']] = i['symbol']
+                    genes = []
+                    if isinstance(i['ensembl'], list):
+                        genes = [j['gene'] for j in i['ensembl']]
+                    else:
+                        genes = [i['ensembl']['gene']]
+                    for g in genes:
+                        symbol[g] = i['symbol']
             self._symbol = symbol
         return self._symbol
 
@@ -315,6 +354,12 @@ class Genes(object):
                 # update database
                 _update_db(self.db_conn,new_result)
                 for i in new_result:
-                    alias[i['ensembl']['gene']] = i['genomic_pos']
+                    genes = []
+                    if isinstance(i['ensembl'], list):
+                        genes = [j['gene'] for j in i['ensembl']]
+                    else:
+                        genes = [i['ensembl']['gene']]
+                    for g in genes:
+                        alias[g] = i.get('alias',[])
             self._alias = alias
         return self._alias
