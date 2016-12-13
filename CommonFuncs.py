@@ -58,9 +58,9 @@ def clean_variant(v,build='hg19'):
         if v[-1] == '-':
             # deletion
             chrom,pos,ref,rubbish,rubbish = v.split('-')
-            pos = int(pos)
+            pos = int(pos)-1
             common_base = find_bases(chrom,pos,build=build)
-            pos = pos - 1
+            #pos = pos - 1
             ref = common_base + ref
             alt = common_base
         else:
