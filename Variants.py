@@ -7,7 +7,7 @@ import copy
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS variants
-        (id text PRIMARY KEY, exac text, kaviar_af real, cadd_phred real)''')
+        (id text PRIMARY KEY UNIQUE, exac text, kaviar_af real, cadd_phred real)''')
     db_conn.commit()
 
 def _liftover(variant, frm, to):

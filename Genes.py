@@ -8,7 +8,7 @@ import json
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS genes
-        (id text PRIMARY KEY, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text)''')
+        (id text PRIMARY KEY UNIQUE, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text)''')
     db_conn.commit()
 
 def _update_db(db_conn, mgs):
