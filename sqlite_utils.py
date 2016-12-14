@@ -1,6 +1,10 @@
 # some useful utilities to query/update sqlite db
 import sqlite3
 
+def _chop_array(arr, size=999):
+    for i in xrange(0, len(arr), size):
+        yield arr[i:i + size]
+
 def dict_factory(cursor, row):
     # convert from sqlite tuple to dictionary
     # if row is None, return None
@@ -28,15 +32,24 @@ def update_db(db_conn,table,fields,value_dict):
     if remain_fields:
         sql += ',' + ','.join(['(SELECT %s FROM %s WHERE id = ?)' % (f, table) for f in remain_fields])
     sql += ')'
-    # update
+    # update using executemany.
+    # might take a long time for large array, chop it into small chunks to commit
+    values_to_insert = []
     for k,v in value_dict.iteritems():
-        db_c.execute(sql, (k,)+tuple(v)+tuple([k]*len(remain_fields)))
-    db_conn.commit()
+        values_to_insert.append((k,)+tuple(v)+tuple([k]*len(remain_fields)))
+        #db_c.execute(sql, (k,)+tuple(v)+tuple([k]*len(remain_fields)))
+    for a in _chop_array(values_to_insert,200):
+        db_c.executemany(sql,a)
+        db_conn.commit()
 
 def batch_query(db_c,table,arr):
     # batch query sqlite database
-    sql = 'SELECT * FROM %s WHERE id in (%s)' % (
-                    table,
-                    ','.join(['?']*len(arr)))
-    result = db_c.execute(sql,arr)
+    # since there is a limit on number of variables at 999, chop them
+    result = []
+    for a in _chop_array(arr):
+        sql = 'SELECT * FROM %s WHERE id in (%s)' % (
+                        table,
+                        ','.join(['?']*len(a)))
+        temp = db_c.execute(sql,a)
+        result.extend([i for i in temp])
     return result

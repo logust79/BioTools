@@ -24,7 +24,17 @@ def find_bases(chrom,start,end=None,build='hg19',strand=1):
     end = end or start
     server = "http://%s.rest.ensembl.org" % build
     ext = '''/sequence/region/human/%(chrom)s:%(start)s..%(end)s:%(strand)s''' % locals()
-    r = requests.get(server+ext, headers={'Content-Type':'application/json' })
+    attempt = 5
+    while attempt:
+        try:
+            r = requests.get(server+ext, headers={'Content-Type':'application/json' })
+            time.sleep(0.05)
+            break
+        except requests.HTTPError:
+            print 'query ensembl connectionError, retry'
+            attempt -= 1
+            time.sleep(2)
+    if r.status_code == 404: return None
     if not r.ok:
         return r.raise_for_status()
     decoded = r.json()
@@ -60,7 +70,6 @@ def clean_variant(v,build='hg19'):
             chrom,pos,ref,rubbish,rubbish = v.split('-')
             pos = int(pos)-1
             common_base = find_bases(chrom,pos,build=build)
-            #pos = pos - 1
             ref = common_base + ref
             alt = common_base
         else:
@@ -211,7 +220,7 @@ def anno_kaviar(vars):
         chrom,pos,ref,alt = v.split('-')
         end = int(pos)+len(ref)-1
         match = [i for i in kaviar if i['Chrom'] == 'chr'+chrom and i['Position']==pos and i['End'] == str(end) and i['Variant']==alt]
-        result[v] = float(match[0]['AF']) if match else None
+        result[v] = float(match[0]['AF']) if match and match[0]['AF'] else None
     return result
 
 def my_gene(gene_id):

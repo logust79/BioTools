@@ -166,7 +166,8 @@ class Variants:
             exac = {}
             for i in result:
                 temp = dict_factory(db_c,i)
-                data[temp['id']] = json.loads(temp['exac'])
+                if temp['exac']:
+                    data[temp['id']] = json.loads(temp['exac'])
             for k,v in self._v.iteritems():
                 if v in data and data[v] != None:
                     exac[k] = data[v]
