@@ -6,9 +6,10 @@ Genes.py has some gene classes (help find online ExAC pLI, mis-z, symbol, alias 
 ### Variant classes examples
 ```
 import sqlite3
-import Variant
+import Variants
+import json
 
 db_conn=sqlite3.connect('irdc.db')
-V = Variant.Variants(db_conn,[20-61523355-T-C,X-153694021-C-T])
-print V.exac
+V = Variants.Variants(db_conn,['20-61523355-T-C','X-153694021-C-T'])
+print json.dumps(V.exac, indent=4)
 ```
