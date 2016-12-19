@@ -8,6 +8,7 @@ Some self use and common functions
 import time
 import requests
 from bs4 import BeautifulSoup
+from collections import defaultdict
 import json
 import mygene
 import pyliftover #pyliftover is slow!
@@ -229,3 +230,53 @@ def my_gene(gene_id):
 def my_genes(gene_ids):
     mg = mygene.MyGeneInfo()
     return mg.getgenes(gene_ids,fields='all')
+
+def obo_parser(obofile):
+    term_head = "[Term]"
+    #Keep the desired object data here
+    all_objects = {}
+
+    def add_object(d):
+        #print(json.dumps(d, indent = 4) + '\n')
+        #Ignore obsolete objects
+        if "is_obsolete" in d:
+            return
+
+        #Gather desired data into a single list,
+        # and store it in the main all_objects dict
+        key = d["id"][0]
+        is_a = d["is_a"]
+        #Remove the next line if you want to keep the is_a description info
+        is_a = [s.partition(' ! ')[0] for s in is_a]
+        all_objects[key] = d["name"] + is_a
+
+    #A temporary dict to hold object data
+    current = defaultdict(list)
+
+    with open(obofile,'r') as f:
+        #Skip header data
+        for line in f:
+            if line.rstrip() == term_head:
+                break
+
+        for line in f:
+            line = line.rstrip()
+            if not line:
+                #ignore blank lines
+                continue
+            if line == term_head:
+                #end of term
+                add_object(current)
+                current = defaultdict(list)
+            else:
+                #accumulate object data into current
+                key, _, val = line.partition(": ")
+                current[key].append(val)
+
+    if current:
+        add_object(current)
+    # convert to dict
+    for k,v in all_objects.iteritems():
+        all_objects[k] = {'name':v[0],'is_a':v[1:]}
+
+    return all_objects

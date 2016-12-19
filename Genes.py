@@ -33,7 +33,6 @@ def _update_db(db_conn, mgs):
                 json.dumps(i.get('alias',[]),indent=4), #alias
             ]
     # update
-    print mgs
     update_db(
             db_conn,
             'genes',
