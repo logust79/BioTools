@@ -42,13 +42,14 @@ def update_db(db_conn,table,fields,value_dict):
         db_c.executemany(sql,a)
         db_conn.commit()
 
-def batch_query(db_c,table,arr):
+def batch_query(db_c,table,arr,pointer='id'):
     # batch query sqlite database
     # since there is a limit on number of variables at 999, chop them
     result = []
     for a in _chop_array(arr):
-        sql = 'SELECT * FROM %s WHERE id in (%s)' % (
+        sql = 'SELECT * FROM %s WHERE %s in (%s)' % (
                         table,
+                        pointer,
                         ','.join(['?']*len(a)))
         temp = db_c.execute(sql,a)
         result.extend([i for i in temp])

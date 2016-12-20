@@ -9,7 +9,7 @@ import re
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS genes
-        (id text NOT NULL UNIQUE, gene_id, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text, PRIMARY KEY (id, gene_id))''')
+        (id text NOT NULL UNIQUE, gene_id text, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text, PRIMARY KEY (id, gene_id))''')
     db_conn.commit()
 
 def _update_db(db_conn, mgs):
@@ -130,7 +130,8 @@ def _fetch_many(self,field):
         else:
             new_genes.append(g)
     if new_genes:
-        print 'querying web'
+        print new_genes
+        print 'querying mygenes'
         new_result = my_genes(new_genes)
         # update database
         _update_db(self.db_conn,new_result)
@@ -149,7 +150,38 @@ class Genes(object):
         _initiate_db(db_conn)
         self.db_conn = db_conn
         self.ids = ids
+    
+    def gene_ids_to_ids(self,gene_ids=[]):
+        # convert from gene_ids to ids
+        db_c = self.db_conn.cursor()
+        db_result = batch_query(db_c,'genes',gene_ids,'gene_id')
+        new_genes = []
+        data = {}
+        final = {}
+        for i in db_result:
+            temp = dict_factory(db_c,i)
+            data[temp['gene_id']] = data.get(temp['gene_id'],[])
+            data[temp['gene_id']].append(temp['id'])
+        for g in gene_ids:
+            if g in data and data[g] != None:
+                final[g] = data[g]
+            else:
+                new_genes.append(g)
+        if new_genes:
+            print new_genes
+            print 'querying mygenes'
+            new_result = my_genes(new_genes)
+            # update database
+            _update_db(self.db_conn,new_result)
+            # query again
+            new_result = batch_query(db_c,'genes',new_genes,'gene_id')
+            for i in new_result:
+                temp = dict_factory(db_c, i)
+                final[temp['gene_id']] = final.get(temp['gene_id'],[])
+                final[temp['gene_id']].append(temp['id'])
+        return final
 
+    
     @property
     def gene_id(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
