@@ -9,18 +9,38 @@ import re
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS genes
-        (id text NOT NULL UNIQUE, gene_id text, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text, PRIMARY KEY (id, gene_id))''')
+        (id text NOT NULL UNIQUE, entrez_id text, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text, PRIMARY KEY (id, entrez_id))''')
     db_conn.commit()
 
-def _update_db(db_conn, mgs):
+def _update_db(self, mgs):
     # a wrapper of sqlite_utils.update_db for genes
-    fields = ['gene_id','pLI','mis_z','genomic_pos_hg19','genomic_pos','symbol','alias']
+    fields = ['entrez_id','pLI','mis_z','genomic_pos_hg19','genomic_pos','symbol','alias']
     # transform mgs to a dict
     data = {}
     for i in mgs:
         genes = []
+        # some genes miss ensembl ids, fill them manually for the time being
+        if i['_id'] == '7012':
+            i['ensembl'] = {'gene':'ENSG00000270141'}
+        elif i['_id'] == '6315':
+            i['ensembl'] = {'gene':'ENSG00000230223'}
+        elif i['_id'] == '2657':
+            i['ensembl'] = {'gene':'ENSG00000130283'}
+        elif i['_id'] == '84876':
+            i['ensembl'] = {'gene':'ENSG00000276045'}
+        elif i['_id'] == '9103':
+            i['ensembl'] = {'gene':'ENSG00000244682'}
+        elif 'genomic_pos_hg19' not in i:
+            self._bad_genes.append(i['_id'])
+            logging.warning('Warning: %s is not registered in ensembl' % i['_id'])
+            continue
+        '''
+        debug
+        '''
+        if 'ensembl' not in i or 'genomic_pos' not in i:
+            print json.dumps(i,indent=4)
         if isinstance(i['ensembl'], list):
-            # sometimes ensembl returns a list, each element corresponds to a gene_id
+            # sometimes ensembl returns a list, each element corresponds to an id
             genes = [j['gene'] for j in i['ensembl']]
         else:
             genes = [i['ensembl']['gene']]
@@ -30,13 +50,17 @@ def _update_db(db_conn, mgs):
                 i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
                 i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1, #mis_z
                 json.dumps(i['genomic_pos_hg19'],indent=4), #genomic_pos_hg19
-                json.dumps(i['genomic_pos'],indent=4), #genomic_pos
+                json.dumps(i.get('genomic_pos',{
+                    "start": None,
+                    "chr": None,
+                    "end": None,
+                    "strand": None}),indent=4), #genomic_pos
                 i['symbol'],
                 json.dumps(i.get('alias',[]),indent=4), #alias
             ]
     # update
     update_db(
-            db_conn,
+            self.db_conn,
             'genes',
             fields,
             data
@@ -51,11 +75,37 @@ def _fetch_one(self,field):
         print 'query mygene'
         mg = my_gene(self.id)
         # update db
-        _update_db(self.db_conn, [mg])
+        _update_db(self, [mg])
         # refetch
         db_c.execute('SELECT * FROM genes WHERE id=?',(self.id,))
         db_gene = dict_factory(db_c,db_c.fetchone())
     return db_gene[field]
+
+def _fetch_many(self,field):
+    db_c = self.db_conn.cursor()
+    result = batch_query(db_c,'genes',self.ids)
+    data = {}
+    new_genes = []
+    final = {}
+    for i in result:
+        temp = dict_factory(db_c, i)
+        data[temp['id']] = temp[field]
+    for g in self.ids:
+        if g in data and data[g] != None:
+            final[g] = data[g]
+        else:
+            new_genes.append(g)
+    if new_genes:
+        print 'querying mygenes'
+        new_result = my_genes(new_genes)
+        # update database
+        _update_db(self,new_result)
+        # query again
+        new_result = batch_query(db_c,'genes',new_genes)
+        for i in new_result:
+            temp = dict_factory(db_c, i)
+            final[temp['id']] = temp[field]
+    return final
 
 class Gene(object):
     def __init__(self, db_conn, id=None):
@@ -67,11 +117,11 @@ class Gene(object):
         self.db_conn = db_conn
     
     @property
-    def gene_id(self):
+    def entrez_id(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
-        if getattr(self, '_gene_id', None) is None:
-            self._gene_id = _fetch_one(self,'gene_id')
-        return self._gene_id
+        if getattr(self, '_entrez_id', None) is None:
+            self._entrez_id = _fetch_one(self,'entrez_id')
+        return self._entrez_id
 
     @property
     def pLI(self):
@@ -115,33 +165,6 @@ class Gene(object):
             self._alias = json.loads(_fetch_one(self,'alias'))
         return self._alias
 
-def _fetch_many(self,field):
-    db_c = self.db_conn.cursor()
-    result = batch_query(db_c,'genes',self.ids)
-    data = {}
-    new_genes = []
-    final = {}
-    for i in result:
-        temp = dict_factory(db_c, i)
-        data[temp['id']] = temp[field]
-    for g in self.ids:
-        if g in data and data[g] != None:
-            final[g] = data[g]
-        else:
-            new_genes.append(g)
-    if new_genes:
-        print new_genes
-        print 'querying mygenes'
-        new_result = my_genes(new_genes)
-        # update database
-        _update_db(self.db_conn,new_result)
-        # query again
-        new_result = batch_query(db_c,'genes',new_genes)
-        for i in new_result:
-            temp = dict_factory(db_c, i)
-            final[temp['id']] = temp[field]
-    return final
-
 class Genes(object):
     def __init__(self, db_conn, ids=[]):
         # id ok?
@@ -150,44 +173,44 @@ class Genes(object):
         _initiate_db(db_conn)
         self.db_conn = db_conn
         self.ids = ids
+        self._bad_genes = [] # this is for bad ids that have no ordinary entries in mygenes. Avoid repetitive queries.
     
-    def gene_ids_to_ids(self,gene_ids=[]):
-        # convert from gene_ids to ids
+    def entrez_ids_to_ensembl_ids(self,entrez_ids=[]):
+        # convert from entrez_ids to ensembl ids
         db_c = self.db_conn.cursor()
-        db_result = batch_query(db_c,'genes',gene_ids,'gene_id')
+        db_result = batch_query(db_c,'genes',entrez_ids,'entrez_id')
         new_genes = []
         data = {}
         final = {}
         for i in db_result:
             temp = dict_factory(db_c,i)
-            data[temp['gene_id']] = data.get(temp['gene_id'],[])
-            data[temp['gene_id']].append(temp['id'])
-        for g in gene_ids:
+            data[temp['entrez_id']] = data.get(temp['entrez_id'],[])
+            data[temp['entrez_id']].append(temp['id'])
+        for g in entrez_ids:
             if g in data and data[g] != None:
                 final[g] = data[g]
-            else:
+            elif g not in self._bad_genes:
                 new_genes.append(g)
         if new_genes:
-            print new_genes
             print 'querying mygenes'
             new_result = my_genes(new_genes)
             # update database
-            _update_db(self.db_conn,new_result)
+            _update_db(self,new_result)
             # query again
-            new_result = batch_query(db_c,'genes',new_genes,'gene_id')
+            new_result = batch_query(db_c,'genes',new_genes,'entrez_id')
             for i in new_result:
                 temp = dict_factory(db_c, i)
-                final[temp['gene_id']] = final.get(temp['gene_id'],[])
-                final[temp['gene_id']].append(temp['id'])
+                final[temp['entrez_id']] = final.get(temp['entrez_id'],[])
+                final[temp['entrez_id']].append(temp['id'])
         return final
 
     
     @property
-    def gene_id(self):
+    def entrez_id(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
-        if getattr(self, '_gene_id', None) is None:
-            self._gene_id = _fetch_many(self,'gene_id')
-        return self._gene_id
+        if getattr(self, '_entrez_id', None) is None:
+            self._entrez_id = _fetch_many(self,'entrez_id')
+        return self._entrez_id
     
     @property
     def pLI(self):
