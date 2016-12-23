@@ -1,5 +1,7 @@
 '''
 hpo objects, including doing analyses such as hpo similarity, and group of hpos similarities
+hp.obo can be downloaded from: http://www.obofoundry.org/ontology/hp.html
+ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt.gz can be downloaded from https://github.com/moonso/phizz/blob/master/phizz/resources/ALL_SOURCES_ALL_FREQUENCIES_phenotype_to_genes.txt.gz
 '''
 import requests
 import json
@@ -76,7 +78,7 @@ class Hpo:
         #convert hpo_gene's gene_ids to ensembl ids
         G = Genes.Genes(self.db_conn)
         for k,v in hpo_gene.iteritems():
-            hpo_gene[k] = _flatten_array_of_arrays(G.entrez_ids_to_ensembl_ids(v).values())
+            hpo_gene[k] = _flatten_array_of_arrays(G.entrezIds_to_ensemblIds(v).values())
         # convert to array of tuples
         values = []
         for k,v in data.iteritems():

@@ -230,6 +230,14 @@ def my_gene(gene_id):
 def my_genes(gene_ids):
     mg = mygene.MyGeneInfo()
     return mg.getgenes(gene_ids,fields='all')
+def my_genes_by_symbol(symbols,species=None):
+    mg = mygene.MyGeneInfo()
+    result = mg.querymany(symbols, scopes='symbol', species=species,fields='all')
+    # which ones are not found
+    not_found = [i['query'] for i in result if i.get('notfound',False) == True]
+    # query again on alias
+    result.extend(mg.querymany(not_found, scopes='alias', species=species,fields='all'))
+    return result
 
 def obo_parser(obofile):
     term_head = "[Term]"
@@ -237,7 +245,6 @@ def obo_parser(obofile):
     all_objects = {}
 
     def add_object(d):
-        #print(json.dumps(d, indent = 4) + '\n')
         #Ignore obsolete objects
         if "is_obsolete" in d:
             return

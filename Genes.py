@@ -6,6 +6,7 @@ import copy
 import json
 import re
 
+
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS genes
@@ -20,6 +21,7 @@ def _update_db(self, mgs):
     for i in mgs:
         genes = []
         # some genes miss ensembl ids, fill them manually for the time being
+        if '_id' not in i: continue #not found
         if i['_id'] == '7012':
             i['ensembl'] = {'gene':'ENSG00000270141'}
         elif i['_id'] == '6315':
@@ -175,8 +177,8 @@ class Genes(object):
         self.ids = ids
         self._bad_genes = [] # this is for bad ids that have no ordinary entries in mygenes. Avoid repetitive queries.
     
-    def entrez_ids_to_ensembl_ids(self,entrez_ids=[]):
-        # convert from entrez_ids to ensembl ids
+    def entrezIds_to_ensemblIds(self,entrez_ids=[]):
+        # convert from entrez ids to ensembl ids
         db_c = self.db_conn.cursor()
         db_result = batch_query(db_c,'genes',entrez_ids,'entrez_id')
         new_genes = []
@@ -204,7 +206,44 @@ class Genes(object):
                 final[temp['entrez_id']].append(temp['id'])
         return final
 
-    
+    def symbols_to_ensemblIds(self,symbols=[]):
+        # convert from symbols to ensembl ids
+        db_c = self.db_conn.cursor()
+        # seek symbols
+        db_result = batch_query(db_c,'genes',symbols,'symbol')
+        new_genes = []
+        data = {}
+        final = {}
+        for i in db_result:
+            temp = dict_factory(db_c,i)
+            data[temp['symbol']] = temp['id']
+        for g in symbols:
+            if g in data and data[g] != None:
+                final[g] = data[g]
+            elif g not in self._bad_genes:
+                new_genes.append(g)
+        # seek aliases
+        sql = '''SELECT * FROM genes WHERE alias like ? '''
+        found = []
+        for g in new_genes:
+            temp = [j for j in db_c.execute(sql,('%"'+g+'"%',))]
+            if temp:
+                final[g] = temp[0][0]
+                found.append(g)
+        for g in found:
+            new_genes.remove(g)
+        if new_genes:
+            print 'querying mygenes'
+            new_result = my_genes_by_symbol(new_genes,species='human')
+            # update database
+            _update_db(self,new_result)
+            # query again
+            new_result = batch_query(db_c,'genes',new_genes,'symbol')
+            for i in new_result:
+                temp = dict_factory(db_c, i)
+                final[i] = temp['id']
+        return final
+
     @property
     def entrez_id(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
