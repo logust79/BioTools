@@ -248,7 +248,7 @@ class Variants:
             if new_vars:
                 if getattr(self,'cadd_file', None) is None:
                     # can't annotate
-                    logging.warning(self.variant_id+' cannot annotate since the cadd_phred for this variant is not in db, and cadd file is not provided. (can do this: object.cadd_file=file)')
+                    logging.warning(', '.join(new_vars) + ' cannot annotate since the cadd_phred for this variant is not in db, and cadd file is not provided. (can do this: object.cadd_file=file)')
                     # write un-annotated cadd_phred as None
                     for k in new_vars:
                         cadd_phred[k] = None
@@ -260,12 +260,13 @@ class Variants:
                             new_result[v] = self._cadd_data[v]
                         cadd_phred[k] = self._cadd_data.get(v,None)
                     # update database
-                    print 'write cadd to database'
-                    update_db(
-                        self.db_conn,
-                        'variants',
-                        ['cadd_phred'],
-                        {k:[v] for k,v in new_result.iteritems()}
-                        )
+                    if new_result:
+                        print 'write cadd to database'
+                        update_db(
+                            self.db_conn,
+                            'variants',
+                            ['cadd_phred'],
+                            {k:[v] for k,v in new_result.iteritems()}
+                            )
             self._cadd_phred = cadd_phred
         return self._cadd_phred

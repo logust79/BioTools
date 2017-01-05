@@ -201,7 +201,7 @@ def anno_kaviar(vars):
             # parse it
             soup = BeautifulSoup(r.content, 'html.parser')
             header = []
-            for l in soup.body.pre.string.split('\n'):
+            for l in soup.body.pre.get_text().split('\n'):
                 if not l:
                     continue
                 if l[:3] == '#Ch':
