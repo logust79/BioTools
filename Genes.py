@@ -47,7 +47,6 @@ def _update_db(self, mgs):
         elif 'genomic_pos_hg19' not in i:
             i['genomic_pos_hg19'] = {}
         if 'ensembl' not in i:
-            print i
             self._bad_genes.append(i['query'])
             logging.warning('Warning: %s is not registered in ensembl' % i['query'])
             continue
