@@ -63,11 +63,12 @@ def _update_db(self, mgs):
             print json.dumps(i,indent=4)
         if isinstance(i['ensembl'], list):
             # sometimes ensembl returns a list, each element corresponds to an id
-            # use genomic_pos to figure out which ensembl id to use
-            for ind,val in enumerate(i['ensembl']):
-                if i['genomic_pos'][ind]['chr'] in _VALID_CHROMOSOMES:
-                    gene = val['gene']
-                    genomic_pos = i['genomic_pos'][ind]
+            # the active ensembl id is always at the end of the list
+            # genomic_pos has only one in valid chromosomes
+            gene = i['ensembl'][-1]['gene']
+            for val in i['genomic_pos']:
+                if val['chr'] in _VALID_CHROMOSOMES:
+                    genomic_pos = val
                     break
             
         else:
