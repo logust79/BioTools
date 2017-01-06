@@ -67,7 +67,7 @@ def _update_db(self, mgs):
                     break
         else:
             gene = i['ensembl']['gene']
-            genomic_pos = i['genomic_pos']
+            genomic_pos = i.get('genomic_pos',{})
 
         data[gene] = [
             i['_id'],
