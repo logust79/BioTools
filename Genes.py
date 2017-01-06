@@ -202,6 +202,7 @@ class Genes(object):
     def entrezIds_to_ensemblIds(self,entrez_ids=[]):
         # convert from entrez ids to ensembl ids
         db_c = self.db_conn.cursor()
+        entrez_ids = list(set(entrez_ids) - set(self._bad_genes))
         db_result = batch_query(db_c,'genes',entrez_ids,'entrez_id')
         new_genes = []
         data = {}
@@ -213,7 +214,7 @@ class Genes(object):
         for g in entrez_ids:
             if g in data and data[g] != None:
                 final[g] = data[g]
-            elif g not in self._bad_genes:
+            else:
                 new_genes.append(g)
         if new_genes:
             print 'querying mygenes from entrezIds_to_ensemblIds'
@@ -244,7 +245,7 @@ class Genes(object):
         for g in symbols:
             if g in data and data[g] != None:
                 final[g] = data[g]
-            elif g not in self._bad_genes:
+            else:
                 new_genes.append(g)
         # seek aliases
         sql = '''SELECT * FROM genes WHERE alias like ? '''
