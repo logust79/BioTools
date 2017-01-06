@@ -117,7 +117,7 @@ def _fetch_many(self,field):
     for g in self.ids:
         if g in data and data[g] != None:
             final[g] = data[g]
-        else:
+        elif g not in self._bad_genes:
             new_genes.append(g)
     if new_genes:
         print 'querying mygenes from fetch_many'
