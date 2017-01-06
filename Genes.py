@@ -6,6 +6,10 @@ import copy
 import json
 import re
 
+'''
+constants
+'''
+_VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
 
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
@@ -17,9 +21,22 @@ def _update_db(self, mgs):
     # a wrapper of sqlite_utils.update_db for genes
     fields = ['entrez_id','pLI','mis_z','genomic_pos_hg19','genomic_pos','symbol','alias']
     # transform mgs to a dict
-    data = {}
+    good_result = []
+    # remove not found
+    bad_genes = []
     for i in mgs:
-        genes = []
+        if i.get('notfound',None):
+            bad_genes.append(i['query'])
+        else:
+            good_result.append(i)
+    if bad_genes:
+        self._bad_genes.extend(bad_genes)
+        print '-----some queries are not found----'
+        print json.dumps(bad_genes)
+    data = {}
+    for i in good_result:
+        gene = None
+        genomic_pos = None
         # some genes miss ensembl ids, fill them manually for the time being
         if '_id' not in i: continue #not found
         if i['_id'] == '7012':
@@ -33,6 +50,9 @@ def _update_db(self, mgs):
         elif i['_id'] == '9103':
             i['ensembl'] = {'gene':'ENSG00000244682'}
         elif 'genomic_pos_hg19' not in i:
+            i['genomic_pos_hg19'] = {}
+        if 'ensembl' not in i:
+            print i
             self._bad_genes.append(i['query'])
             logging.warning('Warning: %s is not registered in ensembl' % i['query'])
             continue
@@ -43,23 +63,25 @@ def _update_db(self, mgs):
             print json.dumps(i,indent=4)
         if isinstance(i['ensembl'], list):
             # sometimes ensembl returns a list, each element corresponds to an id
-            genes = [j['gene'] for j in i['ensembl']]
+            # use genomic_pos to figure out which ensembl id to use
+            for ind,val in enumerate(i['ensembl']):
+                if i['genomic_pos'][ind]['chr'] in _VALID_CHROMOSOMES:
+                    gene = val['gene']
+                    genomic_pos = i['genomic_pos'][ind]
+                    break
+            
         else:
-            genes = [i['ensembl']['gene']]
-        for g in genes:
-            data[g] = [
-                i['_id'],
-                i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
-                i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1, #mis_z
-                json.dumps(i['genomic_pos_hg19'],indent=4), #genomic_pos_hg19
-                json.dumps(i.get('genomic_pos',{
-                    "start": None,
-                    "chr": None,
-                    "end": None,
-                    "strand": None}),indent=4), #genomic_pos
-                i['symbol'],
-                json.dumps(i.get('alias',[]),indent=4), #alias
-            ]
+            gene = i['ensembl']['gene']
+            genomic_pos = i['genomic_pos']
+        data[gene] = [
+            i['_id'],
+            i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
+            i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1, #mis_z
+            json.dumps(i['genomic_pos_hg19'],indent=4), #genomic_pos_hg19
+            json.dumps(genomic_pos,indent=4), #genomic_pos
+            i['symbol'],
+            json.dumps(i.get('alias',[]),indent=4), #alias
+        ]
     # update
     update_db(
             self.db_conn,
@@ -98,7 +120,7 @@ def _fetch_many(self,field):
         else:
             new_genes.append(g)
     if new_genes:
-        print 'querying mygenes'
+        print 'querying mygenes from fetch_many'
         new_result = my_genes(new_genes)
         # update database
         _update_db(self,new_result)
@@ -194,7 +216,7 @@ class Genes(object):
             elif g not in self._bad_genes:
                 new_genes.append(g)
         if new_genes:
-            print 'querying mygenes'
+            print 'querying mygenes from entrezIds_to_ensemblIds'
             new_result = my_genes(new_genes)
             # update database
             _update_db(self,new_result)
@@ -209,6 +231,8 @@ class Genes(object):
     def symbols_to_ensemblIds(self,symbols=[]):
         # convert from symbols to ensembl ids
         db_c = self.db_conn.cursor()
+        # remove bad symbols
+        symbols = list(set(symbols) - set(self._bad_genes))
         # seek symbols
         db_result = batch_query(db_c,'genes',symbols,'symbol')
         new_genes = []
@@ -233,7 +257,7 @@ class Genes(object):
         for g in found:
             new_genes.remove(g)
         if new_genes:
-            print 'querying mygenes'
+            print 'querying mygenes for symbols to ensemblIds'
             new_result = my_genes_by_symbol(new_genes,species='human')
             # update database
             _update_db(self,new_result)
