@@ -100,7 +100,7 @@ class Variant(object):
                            {self._v:[kaviar_af]}
                            )
             else:
-                kaviar_af = json.loads(db_var['kaviar_af'])
+                kaviar_af = db_var['kaviar_af']
             self._kaviar_af = kaviar_af
         return self._kaviar_af
 
