@@ -14,6 +14,11 @@ import mygene
 import pyliftover #pyliftover is slow!
 
 '''
+constants
+'''
+VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
+
+'''
     request ensembl for bases based on location
 '''
 def find_bases(chrom,start,end=None,build='hg19',strand=1):
@@ -287,3 +292,28 @@ def obo_parser(obofile):
         all_objects[k] = {'name':v[0],'is_a':v[1:]}
 
     return all_objects
+
+'''
+check if ensembl id is active
+'''
+def check_ensemblId(ensemblId):
+    url = 'http://rest.ensembl.org/lookup/id/'+ensemblId
+    attempt = 5
+    while attempt:
+        try:
+            r = requests.get(url, headers={ "Content-Type" : "application/json"})
+            time.sleep(0.05)
+            break
+        except requests.HTTPError:
+            print 'query ensembl connectionError, retry'
+            attempt -= 1
+            time.sleep(2)
+    if r.status_code == 404: return None
+    if not r.ok:
+        print r.raise_for_status()
+        return False
+    decoded = r.json()
+    if decoded.get("seq_region_name",None) in VALID_CHROMOSOMES:
+        return True
+    else:
+        return False

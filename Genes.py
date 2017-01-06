@@ -6,11 +6,6 @@ import copy
 import json
 import re
 
-'''
-constants
-'''
-_VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
-
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS genes
@@ -63,17 +58,17 @@ def _update_db(self, mgs):
             print json.dumps(i,indent=4)
         if isinstance(i['ensembl'], list):
             # sometimes ensembl returns a list, each element corresponds to an id
-            # the active ensembl id is always at the end of the list
+            # check which is the active ensembl id
             # genomic_pos has only one in valid chromosomes
-            gene = i['ensembl'][-1]['gene']
+            gene = [j for j in i['ensembl'] if check_ensemblId(j['gene'])][0]['gene']
             for val in i['genomic_pos']:
-                if val['chr'] in _VALID_CHROMOSOMES:
+                if val['chr'] in VALID_CHROMOSOMES:
                     genomic_pos = val
                     break
-            
         else:
             gene = i['ensembl']['gene']
             genomic_pos = i['genomic_pos']
+
         data[gene] = [
             i['_id'],
             i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
