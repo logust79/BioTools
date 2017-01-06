@@ -60,6 +60,7 @@ def _update_db(self, mgs):
             # sometimes ensembl returns a list, each element corresponds to an id
             # check which is the active ensembl id
             # genomic_pos has only one in valid chromosomes
+            print 'use ensembl API to check ensemblid'
             gene = [j for j in i['ensembl'] if check_ensemblId(j['gene'])][0]['gene']
             for val in i['genomic_pos']:
                 if val['chr'] in VALID_CHROMOSOMES:
