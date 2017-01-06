@@ -33,8 +33,8 @@ def _update_db(self, mgs):
         elif i['_id'] == '9103':
             i['ensembl'] = {'gene':'ENSG00000244682'}
         elif 'genomic_pos_hg19' not in i:
-            self._bad_genes.extend([i['_id'], i.get('symbol',None)]+i.get('alias',[]))
-            logging.warning('Warning: %s is not registered in ensembl' % i['_id'])
+            self._bad_genes.append(i['query'])
+            logging.warning('Warning: %s is not registered in ensembl' % i['query'])
             continue
         '''
         debug
