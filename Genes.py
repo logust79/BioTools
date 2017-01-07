@@ -50,24 +50,31 @@ def _update_db(self, mgs):
             self._bad_genes.append(i['query'])
             logging.warning('Warning: %s is not registered in ensembl' % i['query'])
             continue
-        '''
-        debug
-        '''
-        if 'ensembl' not in i or 'genomic_pos' not in i:
-            print json.dumps(i,indent=4)
+
         if isinstance(i['ensembl'], list):
             # sometimes ensembl returns a list, each element corresponds to an id
             # check which is the active ensembl id
             # genomic_pos has only one in valid chromosomes
             print 'use ensembl API to check ensemblid'
-            gene = [j for j in i['ensembl'] if check_ensemblId(j['gene'])][0]['gene']
+            gene_array = [j for j in i['ensembl'] if check_ensemblId(j['gene'])]
+            if not gene_array: continue
+            gene = gene_array[0]['gene']
+        else:
+            gene = i['ensembl']['gene']
+        if isinstance(i.get('genomic_pos_19',None), list):
+            for val in i['genomic_pos_19']:
+                if val['chr'] in VALID_CHROMOSOMES:
+                    genomic_pos_hg19 = val
+                    break
+        else:
+            genomic_pos_hg19 = i.get('genomic_pos_19',{})
+        if isinstance(i.get('genomic_pos',None), list):
             for val in i['genomic_pos']:
                 if val['chr'] in VALID_CHROMOSOMES:
                     genomic_pos = val
                     break
         else:
-            gene = i['ensembl']['gene']
-            genomic_pos = i.get('genomic_pos',{})
+            genomic_pos = i.get('genomic_pos',{}):
 
         data[gene] = [
             i['_id'],
