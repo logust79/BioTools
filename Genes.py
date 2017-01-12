@@ -74,7 +74,7 @@ def _update_db(self, mgs):
                     genomic_pos = val
                     break
         else:
-            genomic_pos = i.get('genomic_pos',{}):
+            genomic_pos = i.get('genomic_pos',{})
 
         data[gene] = [
             i['_id'],
