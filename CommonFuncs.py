@@ -81,9 +81,8 @@ def clean_variant(v,build='hg19'):
         else:
             # insertion
             chrom,pos,ref,rubbish,alt = v.split('-')
-            pos = int(pos)
+            pos = int(pos)-1
             common_base = find_bases(chrom,pos,build=build)
-            pos = pos - 1
             ref = common_base
             alt = common_base + alt
     else:
