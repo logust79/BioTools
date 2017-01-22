@@ -24,11 +24,10 @@ VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
 def find_bases(chrom,start,end=None,build='hg19',strand=1):
     # translate build
     if build=='hg19':
-        build = 'grch37'
+        server = "http://grch37.rest.ensembl.org"
     elif build=='hg38':
-        build = 'grch38'
+        server = "http://rest.ensembl.org"
     end = end or start
-    server = "http://%s.rest.ensembl.org" % build
     ext = '''/sequence/region/human/%(chrom)s:%(start)s..%(end)s:%(strand)s''' % locals()
     attempt = 5
     while attempt:
