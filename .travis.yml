@@ -7,11 +7,9 @@ install:
 
   - sudo apt-get update
   - pip install -r requirements.txt
-  - pip install coveralls
 
 services:
   - sqlite3
+script:
   - python -m unittest discover
-after_success:
-  coveralls
 
