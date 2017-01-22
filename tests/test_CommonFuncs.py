@@ -37,5 +37,30 @@ class CommonFuncsTestCase(unittest.TestCase):
         case = anno_exac('1-5994956-G-A')
         self.assertFalse(case['any_covered'])
 
+    def test_anno_exac_bulk(self):
+        vs = {
+                '1-94496602-G-T': 0.02449307534291962,
+                '1-94544234-T-C': 0.2552553542009885,
+                '8-43051670-C-T': 0.0005546311702717693,
+                }
+        case1 = anno_exac_bulk(vs.keys())
+        case2 = anno_exac_bulk(vs.keys(), chunk_size=2)
+        for k in vs:
+            self.assertEqual(vs[k],case1[k]['variant']['allele_freq'])
+            self.assertEqual(vs[k],case2[k]['variant']['allele_freq'])
+
+    def test_anno_kaviar(self):
+        vs = {
+                '1-94496602-G-T': 0.02449,
+                '1-94544234-T-C': 0.239336,
+                '8-43051670-C-T': 0.000328,
+                }
+        case1 = anno_kaviar(vs.keys())
+        case2 = anno_kaviar(vs.keys(), chunk_size=2)
+        for k in vs:
+            self.assertEqual(vs[k],case1[k])
+            self.assertEqual(vs[k],case2[k])
+
+
 if __name__ == '__main__':
     unittest.main()

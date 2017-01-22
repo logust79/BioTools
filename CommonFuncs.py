@@ -130,9 +130,9 @@ def anno_exac(v):
     return None
 '''
 
-def anno_exac_bulk(vars):
+def anno_exac_bulk(vars, chunk_size=100):
 # chop into 100 chunks and send to exac annotation
-    vars_array = _chop_array(vars, size=100)
+    vars_array = _chop_array(vars, chunk_size)
     result = {}
     for vs in vars_array:
         print vs
@@ -166,7 +166,7 @@ vars = ['1-123-G-C','1-234-C-T','2-234-T-GA']
 result = anno_kaviar(vars)
 hg19
 '''
-def anno_kaviar(vars):
+def anno_kaviar(vars, chunk_size=100):
     # collapse on chroms
     chroms = {} # {1:[{pos:123,ref:A,alt:T},]}
     for v in vars:
@@ -190,13 +190,14 @@ def anno_kaviar(vars):
         positions = list(set([i['pos'] for i in chroms[c]]))
         ind = 0
         while True:
-            ind += 100
-            print 'process %s variants' % ind
+            ind += chunk_size
             if ind > len(positions):
-                position = ', '.join(positions[ind-100:len(positions)])
+                position = ', '.join(positions[ind-chunk_size:len(positions)])
+                if not position: break
                 br = 1
             else:
-                position = ', '.join(positions[ind-100:ind])
+                position = ', '.join(positions[ind-chunk_size:ind])
+            print 'process %s variants' % min(ind,len(positions))
             args['pos'] = position
             args['chr'] = c
             print args
