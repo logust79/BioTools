@@ -193,7 +193,7 @@ class Gene(object):
         return self._alias
 
 class Genes(object):
-    def __init__(self, db_conn, ids=[]):
+    def __init__(self, db_conn, ids=None):
         # id ok?
         for id in ids:
             if id[:4] != 'ENSG': raise ValueError('id has to be an Ensembl id, such as ENSG00000050453. (%s)' % id)
@@ -202,7 +202,7 @@ class Genes(object):
         self.ids = ids
         self._bad_genes = [] # this is for bad ids that have no ordinary entries in mygenes. Avoid repetitive queries.
     
-    def entrezIds_to_ensemblIds(self,entrez_ids=[]):
+    def entrezIds_to_ensemblIds(self,entrez_ids=None):
         # convert from entrez ids to ensembl ids
         db_c = self.db_conn.cursor()
         entrez_ids = list(set(entrez_ids) - set(self._bad_genes))
@@ -232,7 +232,7 @@ class Genes(object):
                 final[temp['entrez_id']].append(temp['id'])
         return final
 
-    def symbols_to_ensemblIds(self,symbols=[]):
+    def symbols_to_ensemblIds(self,symbols=None):
         # convert from symbols to ensembl ids
         db_c = self.db_conn.cursor()
         # remove bad symbols

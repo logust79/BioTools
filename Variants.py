@@ -141,7 +141,7 @@ class Variant(object):
 class for an array of variants
 '''
 class Variants:
-    def __init__(self, db_conn, vars=[], build='hg19'):
+    def __init__(self, db_conn, vars=None, build='hg19'):
         # initiate db
         _initiate_db(db_conn)
         self.variants = vars
