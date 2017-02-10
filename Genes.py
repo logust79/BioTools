@@ -195,8 +195,9 @@ class Gene(object):
 class Genes(object):
     def __init__(self, db_conn, ids=None):
         # id ok?
-        for id in ids:
-            if id[:4] != 'ENSG': raise ValueError('id has to be an Ensembl id, such as ENSG00000050453. (%s)' % id)
+        if ids:
+            for id in ids:
+                if id[:4] != 'ENSG': raise ValueError('id has to be an Ensembl id, such as ENSG00000050453. (%s)' % id)
         _initiate_db(db_conn)
         self.db_conn = db_conn
         self.ids = ids
