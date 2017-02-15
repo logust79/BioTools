@@ -270,7 +270,7 @@ class Genes(object):
             new_result = batch_query(db_c,'genes',new_genes,'symbol')
             for i in new_result:
                 temp = dict_factory(db_c, i)
-                final[i] = temp['id']
+                final[temp['symbol']] = temp['id']
         return final
 
     @property

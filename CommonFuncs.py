@@ -19,7 +19,7 @@ constants
 VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
 
 '''
-    request ensembl for bases based on location
+request ensembl for bases based on location
 '''
 def find_bases(chrom,start,end=None,build='hg19',strand=1):
     # translate build
