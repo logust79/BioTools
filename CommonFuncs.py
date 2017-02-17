@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from collections import defaultdict
 import json
 import mygene
-import pyliftover #pyliftover is slow!
 
 '''
 constants
@@ -49,6 +48,7 @@ def find_bases(chrom,start,end=None,build='hg19',strand=1):
     liftover between different human genome builds, say hg38 to hg19
 '''
 def liftover(v, frm, to):
+    import pyliftover #pyliftover is slow!
     # note that pyliftover is 0 based
     # First frm-to pair may take time to download the data from UCSC
     # return a list of tuple.
