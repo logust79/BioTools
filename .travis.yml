@@ -12,4 +12,5 @@ services:
   - sqlite3
 script:
   - python -m unittest discover
-
+after_success:
+  coveralls
