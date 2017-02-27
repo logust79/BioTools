@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/logust79/BioTools.svg?branch=master)](https://travis-ci.org/logust79/BioTools)
+[![Coverage Status](https://coveralls.io/repos/github/logust79/BioTools/badge.svg?branch=master)](https://coveralls.io/github/logust79/BioTools?branch=master)
 # Useful Online Annotation Scripts for Variants, Genes and HPO
 CommonFuncs.py has some common functions
 Variants.py has some variant classes (automatically clean variant formats using CommonFuncs.py, help find online ExAC and kaviar [using http://exac.hms.harvard.edu/rest/] and sometimes cadd if given a cadd tsv file)
