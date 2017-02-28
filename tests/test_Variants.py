@@ -33,7 +33,7 @@ class VariantsTestCase(unittest.TestCase):
         }
         case = Variants(self.db, vs.keys())
         case.cadd_file = os.path.join('tests','data','cadd.tsv')
-        for k,v in vs:
+        for k,v in vs.items():
             self.assertEqual(parse_exac(case.exac[k]), v['exac_af'])
             self.assertEqual(case.kaviar_af[k], v['kaviar_af'])
             self.assertEqual(case.cadd_phred[k], v['cadd_phred'])
