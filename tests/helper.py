@@ -9,6 +9,7 @@ import sys
 sys.path.append('..')
 from Compare import compare_dfs
 import os
+import errno    
 
 def mkdir_p(path):
     try:
