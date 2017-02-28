@@ -8,6 +8,7 @@ from numpy import NaN
 import sys
 sys.path.append('..')
 from Compare import compare_dfs
+import os
 
 def mkdir_p(path):
     try:
