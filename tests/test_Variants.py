@@ -1,6 +1,5 @@
 import unittest
 from Variants import *
-import errno    
 import os
 import sqlite3
 from helper import *
@@ -11,9 +10,9 @@ class VariantsTestCase(unittest.TestCase):
         self.db = sqlite3.connect(os.path.join('db','test.db'))
     def test_variant(self):
         case = Variant(self.db, '13-95363811---GCG')
-        self.assertEqual(parse_exac(case), 0)
+        self.assertEqual(parse_exac(case.exac), 0)
         case = Variant(self.db, '2-220400050-T-G')
-        self.assertEqual(parse_exac(case),2.4078979051288225e-05)
+        self.assertEqual(parse_exac(case.exac),2.4078979051288225e-05)
     def test_variants(self):
         vs = {
                 '1-94496602-G-T': {
