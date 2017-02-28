@@ -2,3 +2,4 @@ mygene==3.0.0
 pymongo==3.4.0
 bs4==0.0.1
 pyliftover==0.3
+pandas==0.19.2
