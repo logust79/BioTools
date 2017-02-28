@@ -1,0 +1,5 @@
+## CADD v1.3 (c) University of Washington and Hudson-Alpha Institute for Biotechnology 2013-2015. All rights reserved.
+#CHROM	POS	REF	ALT	RawScore	PHRED
+1	94496602	G	T	10.03
+1	94544234	T	C	1.131
+8	43051670	C	T	4.887

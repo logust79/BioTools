@@ -12,7 +12,7 @@ class CommonFuncsTestCase(unittest.TestCase):
         case = clean_variant('13-95363809-GG--')
         self.assertEqual(case, '13-95363808-CGG-C')
 
-    def test_find_baseis(self):
+    def test_find_bases(self):
         case = find_bases('13', 95363809)
         self.assertEqual(case,'G')
         case = find_bases('13', 95363809, 95363830)
