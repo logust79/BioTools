@@ -15,13 +15,6 @@ import copy
 import pandas
 from numpy import NaN
 
-# some constant
-DEFAULT_HIGHLIGHT_SCHEME = {
-    '+':{'background-color': '#a8f215'},
-    '-':{'background-color': '#aeaeae'},
-    '<>':{'background-color': '#f7f02c'},
-}
-
 '''
 comare between df1(original) and df2(new). 
 df1 and df2 are pandas dataframes
