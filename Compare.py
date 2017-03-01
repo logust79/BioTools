@@ -72,4 +72,15 @@ def compare_dfs(df1, df2, key, fields):
             }
     return result
 
-
+'''
+similar to compare_dfs, but accepts methods when checking fields
+it should return `True` for no change, and `False` for change
+fields = {
+    field1: method1,
+    field2: method2,
+    ...
+}
+if method == None, use '==' as default.
+'''
+def compare_dfs_with_methods(df1, df2, key, fields):
+    pass
