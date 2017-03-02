@@ -22,13 +22,25 @@ use key to tell if new(+) or obsolete(-).
 key should be a number (index)
 each ary's element[key] has to be unique, i.e., 
 len(set([i[key] for i in ary])) == len(ary)
-fields is a list of indexes where changes are checked
+fields accept methods when checking fields
+it should return `False` for no change, and `True` for change
+fields = {
+    field1: method1,
+    field2: method2,
+    ...
+}
+if method == None, use '!=' as default.
 result = {
     '+': list of keys,
     '-': list of keys,
     '<>': {
         key1:{
-            change:[indices],
+            changes:{
+                column1:{
+                    from:
+                    to:
+                },
+            },
         }...
     }
 }
@@ -48,7 +60,7 @@ def compare_dfs(df1, df2, key, fields):
     if len(new_keys) != len(df2.index):
         bad.append('second')
     if bad:
-        msg = "% array's key column's elements are not unique to each other" % ' and '.join(bad)
+        msg = "%s array's key column's elements have duplicates" % ' and '.join(bad)
         raise ValueError(msg)
     # carry on
     # old and delete?
@@ -61,26 +73,32 @@ def compare_dfs(df1, df2, key, fields):
     # get common keys
     common_keys = old_keys - die_keys
     # detect changes.
+    # easy_fields just use plain == as method
+    easy_fields = [i for i,v in fields.items() if not v]
+    hard_fields = [i for i in fields if i not in easy_fields]
     for k in common_keys:
+        # get row
+        d1 = df1[df1[key]==k].iloc[0]
+        d2 = df2[df2[key]==k].iloc[0]
         # NaN != NaN, so replace NaN with ''.
         # after subsetting, replacing NaN with None stops working!
-        diff_cols = df1[df1[key]==k].iloc[0][fields].replace([NaN],'')!=df2[df2[key]==k].iloc[0][fields].replace([NaN],'')
-        changes = [colname for colname, diff_cols in zip(fields, diff_cols.values) if diff_cols]
-        if changes:
+        # easy:
+        easy1 = d1[easy_fields].replace([NaN],'')
+        easy2 = d2[easy_fields].replace([NaN],'')
+        same_cols = (easy1==easy2)
+        diff_cols = [colname for colname, col in zip(easy_fields, same_cols.values) if not col]
+        # hard:
+        hard1 = d1[hard_fields]
+        hard2 = d2[hard_fields]
+        diff_cols += [fd for fd in hard_fields if fields[fd](hard1[fd], hard2[fd])]
+        if diff_cols:
             result['<>'][k] = {
-                    'change':changes,
+                    'change':{
+                        fd:{
+                            'from':d1[fd],
+                            'to':d2[fd],
+                        } for fd in diff_cols
+                    },
             }
     return result
 
-'''
-similar to compare_dfs, but accepts methods when checking fields
-it should return `True` for no change, and `False` for change
-fields = {
-    field1: method1,
-    field2: method2,
-    ...
-}
-if method == None, use '==' as default.
-'''
-def compare_dfs_with_methods(df1, df2, key, fields):
-    pass
