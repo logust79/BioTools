@@ -16,7 +16,7 @@ import gzip
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS hpo
-        (id text PRIMARY KEY UNIQUE, name text, parents text, ancestors text, genes)''')
+        (id text PRIMARY KEY UNIQUE, name text, alt_id text, parents text, ancestors text, genes)''')
     db_conn.commit()
 
 def _flatten_array_of_arrays(arrs):
@@ -85,9 +85,10 @@ class Hpo:
             values.append((
                 k,
                 v['name'],
-                json.dumps(v['is_a'],indent=4),
-                json.dumps(v['ancestors'],indent=4),
-                json.dumps(hpo_gene[k],indent=4)
+                json.dumps(v['alt_id']),
+                json.dumps(v['is_a']),
+                json.dumps(v['ancestors']),
+                json.dumps(hpo_gene[k])
             ))
         # write to database
         db_c = self.db_conn.cursor()

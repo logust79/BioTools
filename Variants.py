@@ -70,7 +70,7 @@ class Variant(object):
                            self.db_conn,
                            'variants',
                            ['exac'],
-                           {self._v:[json.dumps(exac,indent=4)]}
+                           {self._v:[json.dumps(exac)]}
                            )
             else:
                 exac = json.loads(db_var['exac'])
@@ -182,7 +182,7 @@ class Variants:
                            self.db_conn,
                            'variants',
                            ['exac'],
-                           {k:[json.dumps(v,indent=4)] for k,v in new_result.iteritems()}
+                           {k:[json.dumps(v)] for k,v in new_result.iteritems()}
                            )
                 # populate exac
                 for k,v in new_vars.iteritems():

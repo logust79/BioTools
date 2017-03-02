@@ -80,10 +80,10 @@ def _update_db(self, mgs):
             i['_id'],
             i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
             i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1, #mis_z
-            json.dumps(i['genomic_pos_hg19'],indent=4), #genomic_pos_hg19
-            json.dumps(genomic_pos,indent=4), #genomic_pos
+            json.dumps(i['genomic_pos_hg19']), #genomic_pos_hg19
+            json.dumps(genomic_pos), #genomic_pos
             i['symbol'],
-            json.dumps(i.get('alias',[]),indent=4), #alias
+            json.dumps(i.get('alias',[])), #alias
         ]
     # update
     update_db(

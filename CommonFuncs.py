@@ -257,9 +257,14 @@ def obo_parser(obofile):
         # and store it in the main all_objects dict
         key = d["id"][0]
         is_a = d["is_a"]
+        alt_id = d["alt_id"]
         #Remove the next line if you want to keep the is_a description info
         is_a = [s.partition(' ! ')[0] for s in is_a]
-        all_objects[key] = d["name"] + is_a
+        all_objects[key] = {
+            'name':d["name"],
+            'is_a':is_a,
+            'alt_id':alt_id,
+        }
 
     #A temporary dict to hold object data
     current = defaultdict(list)
@@ -287,8 +292,8 @@ def obo_parser(obofile):
     if current:
         add_object(current)
     # convert to dict
-    for k,v in all_objects.iteritems():
-        all_objects[k] = {'name':v[0],'is_a':v[1:]}
+    for k,v in all_objects.items():
+        all_objects[k] = {'name':v['name'],'is_a':v['is_a'],'alt_id':v['alt_id']}
 
     return all_objects
 
