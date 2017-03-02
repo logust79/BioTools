@@ -16,7 +16,7 @@ import gzip
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS hpo
-        (id text PRIMARY KEY UNIQUE, name text, alt_id text, parents text, ancestors text, genes)''')
+        (id text PRIMARY KEY UNIQUE, name text, alt_id text, parents text, ancestors text, genes text)''')
     db_conn.commit()
 
 def _flatten_array_of_arrays(arrs):
@@ -27,7 +27,7 @@ def _flatten_array_of_arrays(arrs):
 
 def _fetch_one(self,field):
     db_c = self.db_conn.cursor()
-    db_c.execute('SELECT * FROM hpo WHERE id=?',(self.id,))
+    db_c.execute('SELECT * FROM hpo WHERE id=?',(self._id,))
     db_hpo = dict_factory(db_c,db_c.fetchone())
     if db_hpo == None or db_hpo[field] == None:
         # first check if hpo db has been constructed
@@ -39,6 +39,22 @@ class Hpo:
     def __init__(self,id,db_conn):
         _initiate_db(db_conn)
         self.id = id
+        # alt id?
+        sql = 'SELECT id FROM hpo WHERE id=?'
+        db_c = db_conn.cursor()
+        db_c.execute(sql,(id,))
+        data = db_c.fetchone()
+        if data:
+            self._id = self.id
+        else:
+            #look into alt_id
+            sql = "SELECT id FROM hpo WHERE alt_id LIKE ?"
+            db_c.execute(sql,('%'+id+'%',))
+            data = db_c.fetchone()
+            if not data:
+                msg = '%s cannot be recognised' % id
+                raise ValueError(msg)
+            self._id = data[0]
         self.db_conn = db_conn
     
     def _find_ancestors(self,id,anc,data):
@@ -92,7 +108,7 @@ class Hpo:
             ))
         # write to database
         db_c = self.db_conn.cursor()
-        sql = 'INSERT INTO hpo VALUES (?,?,?,?,?)'
+        sql = 'INSERT INTO hpo VALUES (?,?,?,?,?,?)'
         db_c.executemany(sql,values)
         self.db_conn.commit()
     @property
@@ -100,7 +116,13 @@ class Hpo:
         if getattr(self,'_name',None) is None:
             self._name = _fetch_one(self,'name')
         return self._name
-    
+
+    @property
+    def alt_ids(self):
+        if getattr(self,'_alt_ids',None) is None:
+            self._alt_ids = json.loads(_fetch_one(self,'alt_id'))
+        return self._alt_ids
+
     @property
     def parents(self):
         if getattr(self,'_parents',None) is None:
