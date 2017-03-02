@@ -36,7 +36,7 @@ class CompareTestCase(unittest.TestCase):
         self.assertEqual(case['<>'], dict())
 
     def test_add(self):
-        answer = json.dumps({"3": {"change": {"field5": {"to": 0.1, "from": NaN}}})
+        answer = json.dumps({"3": {"change": {"field5": {"to": 0.1, "from": NaN}}}})
         case = compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_new4.xlsx'),'Sheet1','key',{'field1':None,'field5':None})
         self.assertEqual(case['+'], set([6]))
         self.assertEqual(case['-'], set([]))
