@@ -11,7 +11,7 @@ v='2-27665608-TC--'
 print clean_variant(v)
 ```
 ### Variant classes examples
-```
+```python
 import sqlite3
 import Variants
 import json
@@ -22,7 +22,7 @@ print json.dumps(V.exac, indent=4)
 ```
 # Compare dataframes
 In the field of genetic diagosis, end results are refreshed when new evidence is introduced. Manual inspection necessitates highlight of changes to avoid wasting time on unchanged data.
-```
+```python
 import Compare
 import pandas as pd
 
@@ -49,7 +49,7 @@ Compare.compare_dfs('original_df', 'new_df', 'index', fields_to_check)
 }
 ```
 You can also pass your customised compare functions as values of fields for alternative comparisons
-```
+```python
 import Compare
 import pandas as pd
 
@@ -70,7 +70,7 @@ Compare.compare_dfs('original_df', 'new_df', 'index', fields_to_check)
 ```
 Or you can use closures to create some even more customised comparison methods (useful when you want to variate some cutoffs.
 
-```
+```python
 import Compare
 import pandas as pd
 
@@ -98,4 +98,4 @@ fields_to_check = {
 }
 Compare.compare_dfs('original_df', 'new_df', 'index', fields_to_check)
 ```
-When `None` is given as field value, it uses good old `==` for comparison
+When `None` is given as field value, it uses good old `==` for comparison. It takes care of the case where `np.nan != np.nan`
