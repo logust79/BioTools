@@ -35,7 +35,7 @@ def find_bases(chrom,start,end=None,build='hg19',strand=1):
             time.sleep(0.05)
             break
         except requests.HTTPError:
-            print 'query ensembl connectionError, retry'
+            print('query ensembl connectionError, retry')
             attempt -= 1
             time.sleep(2)
     if r.status_code == 404: return None
@@ -115,7 +115,7 @@ def anno_exac(v):
             r = requests.get('/'.join([rest_url,service,v]))
             break
         except requests.ConnectionError:
-            print 'query exac connectionError, retry'
+            print('query exac connectionError, retry')
             attempt -= 1
             time.sleep(2)
     if r.status_code == 404: return None
@@ -135,7 +135,7 @@ def anno_exac_bulk(vars, chunk_size=100):
     vars_array = _chop_array(vars, chunk_size)
     result = {}
     for vs in vars_array:
-        print vs
+        print(vs)
         result.update(_anno_exac_bulk_100(vs))
     return result
 
@@ -148,7 +148,7 @@ def _anno_exac_bulk_100(vars):
             r = requests.post(rest_url, data=json.dumps(vars))
             break
         except requests.ConnectionError:
-            print 'query exac connectionError, retry'
+            print('query exac connectionError, retry')
             attempt -= 1
             time.sleep(2)
     if r.status_code == 404: return None
@@ -197,10 +197,10 @@ def anno_kaviar(vars, chunk_size=100):
                 br = 1
             else:
                 position = ', '.join(positions[ind-chunk_size:ind])
-            print 'process %s variants' % min(ind,len(positions))
+            print('process %s variants' % min(ind,len(positions)))
             args['pos'] = position
             args['chr'] = c
-            print args
+            print(args)
             r = requests.get(uri,params=args)
             # parse it
             soup = BeautifulSoup(r.content, 'html.parser')
@@ -309,12 +309,12 @@ def check_ensemblId(ensemblId):
             time.sleep(0.05)
             break
         except requests.HTTPError:
-            print 'query ensembl connectionError, retry'
+            print('query ensembl connectionError, retry')
             attempt -= 1
             time.sleep(2)
     if r.status_code == 404: return None
     if not r.ok:
-        print r.raise_for_status()
+        print(r.raise_for_status())
         return False
     decoded = r.json()
     if decoded.get("seq_region_name",None) in VALID_CHROMOSOMES:

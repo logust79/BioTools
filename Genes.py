@@ -26,8 +26,8 @@ def _update_db(self, mgs):
             good_result.append(i)
     if bad_genes:
         self._bad_genes.extend(bad_genes)
-        print '-----some queries are not found----'
-        print json.dumps(bad_genes)
+        print('-----some queries are not found----')
+        print(json.dumps(bad_genes))
     data = {}
     for i in good_result:
         gene = None
@@ -55,7 +55,7 @@ def _update_db(self, mgs):
             # sometimes ensembl returns a list, each element corresponds to an id
             # check which is the active ensembl id
             # genomic_pos has only one in valid chromosomes
-            print 'use ensembl API to check ensemblid'
+            print('use ensembl API to check ensemblid')
             gene_array = [j for j in i['ensembl'] if check_ensemblId(j['gene'])]
             if not gene_array: continue
             gene = gene_array[0]['gene']
@@ -99,7 +99,7 @@ def _fetch_one(self,field):
     db_gene = dict_factory(db_c,db_c.fetchone())
     if db_gene == None or db_gene[field] == None:
         # query mygene
-        print 'query mygene'
+        print('query mygene')
         mg = my_gene(self.id)
         # update db
         _update_db(self, [mg])
@@ -123,7 +123,7 @@ def _fetch_many(self,field):
         elif g not in self._bad_genes:
             new_genes.append(g)
     if new_genes:
-        print 'querying mygenes from fetch_many'
+        print('querying mygenes from fetch_many')
         new_result = my_genes(new_genes)
         # update database
         _update_db(self,new_result)
@@ -221,7 +221,7 @@ class Genes(object):
             else:
                 new_genes.append(g)
         if new_genes:
-            print 'querying mygenes from entrezIds_to_ensemblIds'
+            print('querying mygenes from entrezIds_to_ensemblIds')
             new_result = my_genes(new_genes)
             # update database
             _update_db(self,new_result)
@@ -262,7 +262,7 @@ class Genes(object):
         for g in found:
             new_genes.remove(g)
         if new_genes:
-            print 'querying mygenes for symbols to ensemblIds'
+            print('querying mygenes for symbols to ensemblIds')
             new_result = my_genes_by_symbol(new_genes,species='human')
             # update database
             _update_db(self,new_result)

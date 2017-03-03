@@ -2,7 +2,7 @@
 import sqlite3
 
 def _chop_array(arr, size=999):
-    for i in xrange(0, len(arr), size):
+    for i in range(0, len(arr), size):
         yield arr[i:i + size]
 
 def dict_factory(cursor, row):
