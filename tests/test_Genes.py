@@ -34,6 +34,9 @@ class GenesTestCase(unittest.TestCase):
         self.assertEqual(case.genomic_pos[gene_id]['start'], 93992835)
         self.assertTrue('STGD' in case.alias[gene_id])
 
+        self.assertEqual(case.entrezIds_to_ensemblIds(['24','7399'])['24'][0], 'ENSG00000198691')
+        self.assertEqual(case.symbols_to_ensemblIds(['ABCA4','USH2A'])['ABCA4'], 'ENSG00000198691')
+
 
 if __name__ == '__main__':
     unittest.main()
