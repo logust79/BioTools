@@ -51,8 +51,8 @@ def field5_cb_factory(thrd):
     def field5_cb_inner(a,b):
         # convert np.nan to None
         # since np.nan != np.nan
-        a = None if pd.isnull(a) else a
-        b = None if pd.isnull(b) else b
+        a = -1 if pd.isnull(a) else a
+        b = -1 if pd.isnull(b) else b
         # equal?
         if a == b: return False
         # one > thrd, one < thrd?

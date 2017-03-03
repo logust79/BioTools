@@ -2,6 +2,8 @@ import unittest
 from Variants import *
 import os
 import sqlite3
+import sys
+sys.path.append('tests')
 from helper import *
 
 class VariantsTestCase(unittest.TestCase):

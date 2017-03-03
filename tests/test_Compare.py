@@ -1,4 +1,6 @@
 import unittest
+import sys
+sys.path.append('tests')
 from helper import *
 import os
 import json
@@ -19,8 +21,8 @@ class CompareTestCase(unittest.TestCase):
         case = compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_new2.xlsx'),'Sheet1','key',{'field1':None,'field5':None})
         self.assertEqual(case['+'], set([]))
         self.assertEqual(case['-'], set([]))
-        self.assertEqual(case['<>'][1]['change'].keys(), ['field5'])
-        self.assertEqual(case['<>'][2]['change'].keys(), ['field5'])
+        self.assertEqual(list(case['<>'][1]['change'].keys()), ['field5'])
+        self.assertEqual(list(case['<>'][2]['change'].keys()), ['field5'])
         self.assertEqual(sorted(case['<>'][4]['change'].keys()), ['field1','field5'])
         self.assertEqual(sorted(case['<>'][5]['change'].keys()), ['field1','field5'])
 
@@ -30,8 +32,8 @@ class CompareTestCase(unittest.TestCase):
         case =  compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_new2.xlsx'),'Sheet1','key',{'field1':None, 'field4':field4_cb, 'field5':field5_closure})
         self.assertEqual(case['+'], set([]))
         self.assertEqual(case['-'], set([]))
-        self.assertEqual(case['<>'][1]['change'].keys(), ['field4'])
-        self.assertEqual(case['<>'][2]['change'].keys(), ['field5'])
+        self.assertEqual(list(case['<>'][1]['change'].keys()), ['field4'])
+        self.assertEqual(list(case['<>'][2]['change'].keys()), ['field5'])
         self.assertEqual(sorted(case['<>'][4]['change'].keys()), ['field1','field5'])
         self.assertEqual(sorted(case['<>'][5]['change'].keys()), ['field1','field5'])
 
@@ -47,7 +49,7 @@ class CompareTestCase(unittest.TestCase):
         case = compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_new4.xlsx'),'Sheet1','key',{'field1':None,'field5':None})
         self.assertEqual(case['+'], set([6]))
         self.assertEqual(case['-'], set([]))
-        self.assertEqual(case['<>'][3]['change'].keys(), ['field5'])
+        self.assertEqual(list(case['<>'][3]['change'].keys()), ['field5'])
 
     def test_add_delete(self):
         case = compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_new5.xlsx'),'Sheet1','key',{'field1':None,'field5':None})
@@ -60,14 +62,14 @@ class CompareTestCase(unittest.TestCase):
         try:
             case = compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_bad1.xlsx'),'Sheet1','key',{'field1':None,'field5':None})
         except ValueError as e:
-            self.assertEqual(e.message, msg)
+            self.assertEqual(str(e), msg)
 
     def test_field_error(self):
-        msg = "field5"
+        msg = "'field5'"
         try:
             case = compare_excel(os.path.join(self.datapath,'compare_old.xlsx'),os.path.join(self.datapath,'compare_bad2.xlsx'),'Sheet1','key',{'field1':None,'field5':None})
         except KeyError as e:
-            self.assertEqual(e.message, msg)
+            self.assertEqual(str(e), msg)
 
 if __name__ == '__main__':
     unittest.main()

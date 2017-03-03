@@ -78,7 +78,7 @@ class Hpo:
         # construct hpo database using the obo file
         data = obo_parser(obofile)
         # get ancestors
-        for k,v in data.iteritems():
+        for k,v in data.items():
             data[k]['ancestors'] = self._find_ancestors(k,[],data)
         
         # get hpo_gene
@@ -93,11 +93,11 @@ class Hpo:
             hpo_gene[l[0]].append(l[2])
         #convert hpo_gene's gene_ids to ensembl ids
         G = Genes.Genes(self.db_conn)
-        for k,v in hpo_gene.iteritems():
+        for k,v in hpo_gene.items():
             hpo_gene[k] = _flatten_array_of_arrays(G.entrezIds_to_ensemblIds(v).values())
         # convert to array of tuples
         values = []
-        for k,v in data.iteritems():
+        for k,v in data.items():
             values.append((
                 k,
                 v['name'],

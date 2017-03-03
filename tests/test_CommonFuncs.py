@@ -43,8 +43,8 @@ class CommonFuncsTestCase(unittest.TestCase):
                 '1-94544234-T-C': 0.2552553542009885,
                 '8-43051670-C-T': 0.0005546311702717693,
                 }
-        case1 = anno_exac_bulk(vs.keys())
-        case2 = anno_exac_bulk(vs.keys(), chunk_size=2)
+        case1 = anno_exac_bulk(list(vs.keys()))
+        case2 = anno_exac_bulk(list(vs.keys()), chunk_size=2)
         for k in vs:
             self.assertEqual(vs[k],case1[k]['variant']['allele_freq'])
             self.assertEqual(vs[k],case2[k]['variant']['allele_freq'])
@@ -55,8 +55,8 @@ class CommonFuncsTestCase(unittest.TestCase):
                 '1-94544234-T-C': 0.239336,
                 '8-43051670-C-T': 0.000328,
                 }
-        case1 = anno_kaviar(vs.keys())
-        case2 = anno_kaviar(vs.keys(), chunk_size=2)
+        case1 = anno_kaviar(list(vs.keys()))
+        case2 = anno_kaviar(list(vs.keys()), chunk_size=2)
         for k in vs:
             self.assertEqual(vs[k],case1[k])
             self.assertEqual(vs[k],case2[k])
