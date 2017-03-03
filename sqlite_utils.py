@@ -35,7 +35,7 @@ def update_db(db_conn,table,fields,value_dict):
     # update using executemany.
     # might take a long time for large array, chop it into small chunks to commit
     values_to_insert = []
-    for k,v in value_dict.iteritems():
+    for k,v in value_dict.items():
         values_to_insert.append((k,)+tuple(v)+tuple([k]*len(remain_fields)))
         #db_c.execute(sql, (k,)+tuple(v)+tuple([k]*len(remain_fields)))
     for a in _chop_array(values_to_insert,200):
