@@ -17,10 +17,23 @@ class GenesTestCase(unittest.TestCase):
         self.assertEqual(case.symbol, 'ABCA4')
         self.assertEqual("{0:.3f}".format(case.pLI), '0.000')
         self.assertEqual(case.entrez_id, '24')
-        self.assertEqual(case.mis_z, -1.498)
+        self.assertEqual("{0:.3f}".format(case.mis_z), '-1.498')
         self.assertEqual(case.genomic_pos_hg19['start'], 94458393)
         self.assertEqual(case.genomic_pos['start'], 93992835)
         self.assertTrue('STGD' in case.alias)
+
+    def test_genes(self):
+        gene_id = 'ENSG00000198691'
+        gene_ids = ['ENSG00000042781','ENSG00000198691']
+        case = Genes(self.db, gene_ids)
+        self.assertEqual(case.symbol[gene_id], 'ABCA4')
+        self.assertEqual("{0:.3f}".format(case.pLI[gene_id]), '0.000')
+        self.assertEqual(case.entrez_id[gene_id], '24')
+        self.assertEqual("{0:.3f}".format(case.mis_z[gene_id]), '-1.498')
+        self.assertEqual(case.genomic_pos_hg19[gene_id]['start'], 94458393)
+        self.assertEqual(case.genomic_pos[gene_id]['start'], 93992835)
+        self.assertTrue('STGD' in case.alias[gene_id])
+
 
 if __name__ == '__main__':
     unittest.main()
