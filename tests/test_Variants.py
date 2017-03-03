@@ -13,8 +13,15 @@ class VariantsTestCase(unittest.TestCase):
     def test_variant(self):
         case = Variant(self.db, '13-95363811---GCG')
         self.assertEqual(parse_exac(case.exac), 0)
+        case = Variant(self.db, '2-219535328-T-G', 'hg38')
+        self.assertEqual(case._v, '2-220400050-T-G')
         case = Variant(self.db, '2-220400050-T-G')
         self.assertEqual(parse_exac(case.exac),2.4078979051288225e-05)
+        self.assertEqual(parse_exac(case.exac),2.4078979051288225e-05)
+        case = Variant(self.db, '1-94496602-G-T')
+        case.cadd_file = os.path.join('tests','data','cadd.tsv')
+        self.assertEqual(case.kaviar_af, 0.02449)
+        self.assertEqual(case.cadd_phred, 10.03)
     def test_variants(self):
         vs = {
                 '1-94496602-G-T': {
@@ -36,6 +43,7 @@ class VariantsTestCase(unittest.TestCase):
         case = Variants(self.db, vs.keys())
         case.cadd_file = os.path.join('tests','data','cadd.tsv')
         for k,v in vs.items():
+            self.assertEqual(parse_exac(case.exac[k]), v['exac_af'])
             self.assertEqual(parse_exac(case.exac[k]), v['exac_af'])
             self.assertEqual(case.kaviar_af[k], v['kaviar_af'])
             self.assertEqual(case.cadd_phred[k], v['cadd_phred'])

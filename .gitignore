@@ -4,3 +4,4 @@ db/*
 *.orig
 *.swp
 ~$*
+private*
