@@ -156,7 +156,7 @@ def _anno_exac_bulk_100(vars):
     return exac_anno
 
 def _chop_array(arr, size=100):
-    for i in xrange(0, len(arr), size):
+    for i in range(0, len(arr), size):
         yield arr[i:i + size]
 
 '''
