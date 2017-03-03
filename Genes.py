@@ -298,14 +298,14 @@ class Genes(object):
     def genomic_pos_hg19(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
         if getattr(self, '_gp19', None) is None:
-            self._gp19 = {k:json.loads(v) for k,v in _fetch_many(self,'genomic_pos_hg19').iteritems()}
+            self._gp19 = {k:json.loads(v) for k,v in _fetch_many(self,'genomic_pos_hg19').items()}
         return self._gp19
 
     @property
     def genomic_pos(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
         if getattr(self, '_gp', None) is None:
-            self._gp = {k:json.loads(v) for k,v in _fetch_many(self,'genomic_pos').iteritems()}
+            self._gp = {k:json.loads(v) for k,v in _fetch_many(self,'genomic_pos').items()}
         return self._gp
     
     @property
@@ -319,5 +319,5 @@ class Genes(object):
     def alias(self):
         # check local database first. if na, use CommonFuncs to annotate, then store in db
         if getattr(self, '_alias', None) is None:
-            self._alias = {k:json.loads(v) for k,v in _fetch_many(self,'alias').iteritems()}
+            self._alias = {k:json.loads(v) for k,v in _fetch_many(self,'alias').items()}
         return self._alias
