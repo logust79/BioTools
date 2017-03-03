@@ -80,7 +80,7 @@ class CommonFuncsTestCase(unittest.TestCase):
     def test_obo_parser(self):
         obo_file = os.path.join('tests','data','hp.obo')
         case = obo_parser(obo_file)
-        self.asserEqual(case['HP:0000556']['name'][0],'Retinal dystrophy')
+        self.assertEqual(case['HP:0000556']['name'][0],'Retinal dystrophy')
 
 if __name__ == '__main__':
     unittest.main()
