@@ -81,6 +81,11 @@ class CommonFuncsTestCase(unittest.TestCase):
         obo_file = os.path.join('tests','data','hp.obo')
         case = obo_parser(obo_file)
         self.assertEqual(case['HP:0000556']['name'][0],'Retinal dystrophy')
+    
+    def test_check_ensemblId(self):
+        good_gene = 'ENSG00000198691'
+        case = check_ensemblId(good_gene)
+        self.assertTrue(case)
 
 if __name__ == '__main__':
     unittest.main()
