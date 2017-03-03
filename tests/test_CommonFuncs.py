@@ -1,5 +1,6 @@
 import unittest
 from CommonFuncs import *
+import os
 
 class CommonFuncsTestCase(unittest.TestCase):
     def test_clean_variant(self):
@@ -61,6 +62,25 @@ class CommonFuncsTestCase(unittest.TestCase):
             self.assertEqual(vs[k],case1[k])
             self.assertEqual(vs[k],case2[k])
 
+    def test_my_gene(self):
+        gene_id = 'ENSG00000198691'
+        case = my_gene(gene_id)
+        self.assertEqual(case['symbol'], 'ABCA4')
+
+    def test_my_genes(self):
+        gene_ids = ['ENSG00000042781','ENSG00000198691']
+        case = my_genes(gene_ids)
+        self.assertEqual(case[0]['symbol'],'USH2A')
+        self.assertEqual(case[1]['symbol'],'ABCA4')
+
+    def test_my_genes_by_symbol(self):
+        case = my_genes_by_symbol('ABCA4','human')
+        self.assertEqual(case[0]['ensembl']['gene'],'ENSG00000198691')
+
+    def test_obo_parser(self):
+        obo_file = os.path.join('tests','data','hp.obo')
+        case = obo_parser(obo_file)
+        self.asserEqual(case['HP:0000556']['name'][0],'Retinal dystrophy')
 
 if __name__ == '__main__':
     unittest.main()
