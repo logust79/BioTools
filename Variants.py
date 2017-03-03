@@ -90,7 +90,7 @@ class Variant(object):
             if db_var == None or db_var['kaviar_af'] == None:
                 # query web
                 print('querying the web for kaviar')
-                kaviar_af = anno_kaviar([self._v])[0]
+                kaviar_af = anno_kaviar([self._v])[self._v]
                 if kaviar_af == None: kaviar_af = -1
                 # insert into database
                 update_db(
