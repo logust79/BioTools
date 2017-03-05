@@ -11,7 +11,7 @@ import Genes
 from CommonFuncs import *
 from collections import defaultdict
 from sqlite_utils import *
-import gzip
+import pandas # for reading csv and dumping to sqlite
 
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
@@ -31,13 +31,14 @@ def _fetch_one(self,field):
     db_hpo = dict_factory(db_c,db_c.fetchone())
     if db_hpo == None or db_hpo[field] == None:
         # first check if hpo db has been constructed
-        self._check_db()
         raise ValueError('no %s can be retrieved' % field)
     return db_hpo[field]
 
 class Hpo:
     def __init__(self,id,db_conn):
         _initiate_db(db_conn)
+        self.db_conn = db_conn
+        self._check_db()
         self.id = id
         # alt id?
         sql = 'SELECT id FROM hpo WHERE id=?'
@@ -55,7 +56,6 @@ class Hpo:
                 msg = '%s cannot be recognised' % id
                 raise ValueError(msg)
             self._id = data[0]
-        self.db_conn = db_conn
     
     def _find_ancestors(self,id,anc,data):
         # construct_db helper function, to find all ancestors of a node
@@ -73,44 +73,13 @@ class Hpo:
         db_c.execute('SELECT * FROM hpo WHERE id=?',('HP:0000001',))
         db_hpo = dict_factory(db_c,db_c.fetchone())
         if db_hpo == None:
-            raise ValueError('No data seems to be in the hpo database. Did you forget to load it using HPO.construct_db("hp.obo")?')
-    def construct_db(self,obofile,hpo_gene_file):
-        # construct hpo database using the obo file
-        data = obo_parser(obofile)
-        # get ancestors
-        for k,v in data.items():
-            data[k]['ancestors'] = self._find_ancestors(k,[],data)
-        
-        # get hpo_gene
-        hpo_gene = defaultdict(list)
-        if hpo_gene_file.endswith('gz'):
-            f = gzip.open(hpo_gene_file,'rb')
-        else:
-            f = open(hpo_gene_file,'r')
-        for l in f:
-            if l[0] == '#': continue
-            l = l.rstrip().split('\t')
-            hpo_gene[l[0]].append(l[2])
-        #convert hpo_gene's gene_ids to ensembl ids
-        G = Genes.Genes(self.db_conn)
-        for k,v in hpo_gene.items():
-            hpo_gene[k] = _flatten_array_of_arrays(G.entrezIds_to_ensemblIds(v).values())
-        # convert to array of tuples
-        values = []
-        for k,v in data.items():
-            values.append((
-                k,
-                v['name'],
-                json.dumps(v['alt_id']),
-                json.dumps(v['is_a']),
-                json.dumps(v['ancestors']),
-                json.dumps(hpo_gene[k])
-            ))
-        # write to database
-        db_c = self.db_conn.cursor()
-        sql = 'INSERT INTO hpo VALUES (?,?,?,?,?,?)'
-        db_c.executemany(sql,values)
-        self.db_conn.commit()
+            self.construct_db()
+    def construct_db(self):
+        # construct hpo database using the data/hpo.csv file
+        csvfile = os.path.join('data','hpo.csv')
+        df = pandas.read_csv(csvfile)
+        df.to_sql('hpo', self.db_conn, if_exists='replace', index=False)
+    
     @property
     def name(self):
         if getattr(self,'_name',None) is None:
