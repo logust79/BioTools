@@ -35,7 +35,7 @@ def _fetch_one(self,field):
     return db_hpo[field]
 
 class Hpo:
-    def __init__(self,id,db_conn):
+    def __init__(self,db_conn,id):
         _initiate_db(db_conn)
         self.db_conn = db_conn
         self._check_db()
