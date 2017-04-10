@@ -7,7 +7,7 @@ import copy
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS variants
-        (id text PRIMARY KEY UNIQUE, exac text, kaviar_af real, cadd_phred real)''')
+        (id text PRIMARY KEY UNIQUE, exac text, gnomad text, kaviar_af real, cadd_phred real)''')
     db_conn.commit()
 
 def _liftover(variant, frm, to):
@@ -28,6 +28,39 @@ def _read_cadd(infile):
         variant_id = '-'.join(line[:4])
         cadd_data[variant_id] = float(line[-1])
     return cadd_data
+
+'''
+result = {
+    'v1':{
+        'genomes':{
+            'any_covered':
+            'data':
+        },
+        'exomes':{
+            'any_covered':
+            'data':
+        }
+    }
+}
+'''
+def anno_gnomad(vars,varsome_key):
+    varsome = anno_varsome(vars,varsome_key)
+    result = {}
+    for k,v in varsome.items():
+        if 'error' in v:
+            logging.warning(v['error'])
+            continue
+        result[k]={'genomes':{},'exomes':{}}
+
+        for m in ['exomes','genomes']:
+            key = 'gnomad_'+m
+            data = v[key]
+            result[k][m]['data'] = data
+            if data or v[key+'_coverage']:
+                result[k][m]['any_covered'] = True
+            else:
+                result[k][m]['any_covered'] = True
+    return result
 
 '''
 class for single variant
@@ -141,12 +174,13 @@ class Variant(object):
 class for an array of variants
 '''
 class Variants:
-    def __init__(self, db_conn, vars=None, build='hg19'):
+    def __init__(self, db_conn, vars=None, build='hg19', varsome_key=None):
         # initiate db
         _initiate_db(db_conn)
         self.variants = vars
         self.build = build
         self.db_conn = db_conn
+        self.varsome_key = varsome_key
         self.cleaned_variants = {i:clean_variant(i) for i in vars}
         # as single Variant, use self._v for downstream annotation
         self._v = copy.copy(self.cleaned_variants)
@@ -270,3 +304,41 @@ class Variants:
                             )
             self._cadd_phred = cadd_phred
         return self._cadd_phred
+
+    @property
+    def gnomad(self):
+        # Check local database first. If not,
+        #   use CommonFuncs to annotate exac, then store in database
+        if getattr(self, '_gnomad', None) is None:
+            # check database
+            db_c = self.db_conn.cursor()
+            result = batch_query(db_c,'variants',list(self._v.values()))
+            data = {}
+            new_vars = {}
+            gnomad = {}
+            for i in result:
+                temp = dict_factory(db_c,i)
+                if temp['gnomad']:
+                    data[temp['id']] = json.loads(temp['gnomad'])
+            for k,v in self._v.items():
+                if v in data and data[v] != None:
+                    gnomad[k] = data[v]
+                else:
+                    # not in database, push to array for later query
+                    new_vars[k] = v
+            if new_vars:
+                print('querying web')
+                new_result = anno_gnomad(list(new_vars.values()), self.varsome_key)
+                print(new_result)
+                # update database
+                update_db(
+                           self.db_conn,
+                           'variants',
+                           ['gnomad'],
+                           {k:[json.dumps(v)] for k,v in new_result.items()}
+                           )
+                # populate exac
+                for k,v in new_vars.items():
+                    gnomad[k] = new_result.get(v,None)
+            self._gnomad = gnomad
+        return self._gnomad

@@ -314,10 +314,31 @@ def check_ensemblId(ensemblId):
             time.sleep(2)
     if r.status_code == 404: return None
     if not r.ok:
-        print(r.raise_for_status())
+        #print(r.raise_for_status())
         return False
     decoded = r.json()
     if decoded.get("seq_region_name",None) in VALID_CHROMOSOMES:
         return True
     else:
         return False
+
+'''
+varsome annotation
+needs API token requested from varsome
+check https://github.com/saphetor/variant-api-client-python
+'''
+def anno_varsome(vars,api_key=None):
+    if not api_key:
+        msg = 'Need an api_key for varsome. Please check https://github.com/saphetor/variant-api-client-python'
+        raise ValueError(msg)
+    
+    # chop array into chunks with size of 1000
+    vars_array = _chop_array(vars, 1000)
+
+    from variantapi.client import VariantAPIClient
+    api = VariantAPIClient(api_key)
+    results = []
+    for vs in vars_array:
+        # results will be an array of dictionaries an api key will be required for this request
+        results.extend(api.batch_lookup(vs, ref_genome=1019))
+    return {k:v for k,v in zip(vars,results)}
