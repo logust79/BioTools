@@ -95,8 +95,8 @@ def compare_dfs(df1, df2, key, fields):
             result['<>'][k] = {
                     'change':{
                         fd:{
-                            'from':d1[fd],
-                            'to':d2[fd],
+                            'from':d1.get(fd,None),
+                            'to':d2.get(fd,None),
                         } for fd in diff_cols
                     },
             }

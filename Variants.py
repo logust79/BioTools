@@ -174,7 +174,7 @@ class Variant(object):
 class for an array of variants
 '''
 class Variants:
-    def __init__(self, db_conn, vars=None, build='hg19', varsome_key=None):
+    def __init__(self, db_conn, vars=None, varsome_key=None, build='hg19'):
         # initiate db
         _initiate_db(db_conn)
         self.variants = vars
@@ -327,7 +327,7 @@ class Variants:
                     # not in database, push to array for later query
                     new_vars[k] = v
             if new_vars:
-                print('querying web')
+                print('querying gnomad')
                 new_result = anno_gnomad(list(new_vars.values()), self.varsome_key)
                 print(new_result)
                 # update database
