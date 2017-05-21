@@ -9,12 +9,12 @@ import re
 def _initiate_db(db_conn):
     db_c = db_conn.cursor()
     db_c.execute('''CREATE TABLE IF NOT EXISTS genes
-        (id text NOT NULL UNIQUE, entrez_id text, pLI real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text, PRIMARY KEY (id, entrez_id))''')
+        (id text NOT NULL UNIQUE, entrez_id text, pLI real, pRec real, mis_z real, genomic_pos_hg19 text, genomic_pos text, symbol text, alias text, PRIMARY KEY (id, entrez_id))''')
     db_conn.commit()
 
 def _update_db(self, mgs):
     # a wrapper of sqlite_utils.update_db for genes
-    fields = ['entrez_id','pLI','mis_z','genomic_pos_hg19','genomic_pos','symbol','alias']
+    fields = ['entrez_id','pLI','pRec','mis_z','genomic_pos_hg19','genomic_pos','symbol','alias']
     # transform mgs to a dict
     good_result = []
     # remove not found
@@ -79,6 +79,7 @@ def _update_db(self, mgs):
         data[gene] = [
             i['_id'],
             i['exac']['all']['p_li'] if 'exac' in i and 'all' in i['exac'] else -1, #pLI
+            i['exac']['all']['p_rec'] if 'exac' in i and 'all' in i['exac'] else -1, #pRec
             i['exac']['all']['mis_z'] if 'exac' in i and 'all' in i['exac'] else -1, #mis_z
             json.dumps(i['genomic_pos_hg19']), #genomic_pos_hg19
             json.dumps(genomic_pos), #genomic_pos
@@ -156,6 +157,13 @@ class Gene(object):
         if getattr(self, '_pLI', None) is None:
             self._pLI = _fetch_one(self,'pLI')
         return self._pLI
+    
+    @property
+    def pRec(self):
+        # check local database first. if na, use CommonFuncs to annotate, then store in db
+        if getattr(self, '_pRec', None) is None:
+            self._pRec = _fetch_one(self,'pRec')
+        return self._pRec
 
     @property
     def mis_z(self):
@@ -286,6 +294,13 @@ class Genes(object):
         if getattr(self, '_pLI', None) is None:
             self._pLI = _fetch_many(self,'pLI')
         return self._pLI
+        
+    @property
+    def pRec(self):
+        # check local database first. if na, use CommonFuncs to annotate, then store in db
+        if getattr(self, '_pRec', None) is None:
+            self._pRec = _fetch_many(self,'pRec')
+        return self._pRec
 
     @property
     def mis_z(self):
