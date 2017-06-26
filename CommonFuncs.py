@@ -11,6 +11,9 @@ from bs4 import BeautifulSoup
 from collections import defaultdict
 import json
 import mygene
+import re
+import tabix
+import os
 
 '''
 constants
@@ -243,6 +246,77 @@ def my_genes_by_symbol(symbols,species=None):
     result.extend(mg.querymany(not_found, scopes='alias', species=species,fields='all'))
     return result
 
+'''
+mygenes use biomart to map gene ids, but sometimes it misses genes, such as entrez_id=6315
+in this case, can use gene_card for mapping
+gene_card accepts either entrez_id or symbol/aliases
+sometimes it returns search result, if more than one matches
+sometimes it returns the matching result
+returns ensembl_id if has one, otherwise None
+'''
+def _find_ensembl_id_from_gene_cards(entrez_id,soup):
+    # find the div
+    the_div = [s for s in soup.findAll("div", {"class" : "gc-subsection"})
+                        if '<h3>External' in str(s)][0]
+    # then find the li
+    lis = the_div.findAll("li")
+    entrez_li = [i for i in lis if 'Entrez Gene:' in str(i)][0]
+    this_entrez_id = entrez_li.a.get_text()
+    
+    if this_entrez_id != entrez_id:
+        # not this one, return None
+        return None
+    # find ensembl_id
+    ensembl_li = [i for i in lis if 'Ensembl:' in str(i)]
+    if not ensembl_li:
+        # it has no ensembl id, return 'NA'
+        return 'NA'
+    return ensembl_li[0].a.get_text()
+
+def gene_cards(entrez_id):
+    print '---querying gene_cards. might take some time---'
+    # need selenium to scrape. might need the most recent version of geckodriver
+    # https://github.com/mozilla/geckodriver/releases
+    from selenium import webdriver
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.common.exceptions import TimeoutException
+    # search the page
+    base_url = 'http://www.genecards.org'
+    url = base_url + ('/Search/Identifier?queryString=%s' % entrez_id)
+    driver = webdriver.Firefox()
+    driver.wait = WebDriverWait(driver, 5)
+    driver.get(url)
+    
+    # is this a list of matches, or the actual gene page?
+    # check title if it has 'GeneCards Search Results'
+    raw = driver.page_source
+    if re.search(r'GeneCards Search Results</title>',raw):
+        # search result
+        # parse it and get hrefs to match pages
+        soup = BeautifulSoup(raw, 'html.parser')
+        tds = soup.findAll("td", { "class" : "gc-gene-symbol" })
+        hrefs = [base_url+t.a['href'] for t in tds]
+        
+        # go to each page and check out
+        for h in hrefs:
+            driver.get(h)
+            raw = driver.page_source
+            soup = BeautifulSoup(raw, 'html.parser')
+            # find external ids section
+            ensembl_id = _find_ensembl_id_from_gene_cards(entrez_id,soup)
+            if not ensembl_id: continue
+            driver.quit()
+            return ensembl_id
+    else:
+        # match page
+        soup = BeautifulSoup(raw, 'html.parser')
+        # find external ids section
+        ensembl_id = _find_ensembl_id_from_gene_cards(entrez_id,soup)
+        driver.quit()
+        return ensembl_id
+
 def obo_parser(obofile):
     term_head = "[Term]"
     #Keep the desired object data here
@@ -323,22 +397,87 @@ def check_ensemblId(ensemblId):
         return False
 
 '''
-varsome annotation
-needs API token requested from varsome
-check https://github.com/saphetor/variant-api-client-python
+gnomad annotation. Currently there's no API service. Relying on local gnomad files
 '''
-def anno_varsome(vars,api_key=None):
-    if not api_key:
-        msg = 'Need an api_key for varsome. Please check https://github.com/saphetor/variant-api-client-python'
-        raise ValueError(msg)
-    
-    # chop array into chunks with size of 1000
-    vars_array = _chop_array(vars, 1000)
+#path = '/media/jing/SEAGATE/db/gnomAD'
+#release = 'release-170228'
 
-    from variantapi.client import VariantAPIClient
-    api = VariantAPIClient(api_key)
-    results = []
-    for vs in vars_array:
-        # results will be an array of dictionaries an api key will be required for this request
-        results.extend(api.batch_lookup(vs, ref_genome=1019))
-    return {k:v for k,v in zip(vars,results)}
+'''
+coverage
+'''
+def gnomad_coverage(v,path_to_gnomad,mode='exome'):
+    v = clean_variant(v)
+    # pytabix does not support header yet. hard code it
+    header = ['chrom','pos','mean','median',1,5,10,15,20,25,30,50,100,]
+    chrom,pos,ref,alt = v.split('-')
+    if mode == 'exome':
+        file = os.path.join(path_to_gnomad,'exomes','coverage','exacv2.chr'+chrom+'.cov.txt.gz')
+    elif mode == 'genome':
+        file = os.path.join(path_to_gnomad,'genomes','coverage','gnomad.chr'+chrom+'.cov.txt.gz')
+    else:
+        msg = "mode only accepts 'exome' or 'genome'"
+        raise ValueError(msg)
+    tb = tabix.open(file)
+    r = tb.query(chrom, int(pos)-1, int(pos))
+    r = list(r)
+    if not r:
+        # not covered
+        return None
+    r = r[0]
+    return {a:b for a,b in zip(header,r)}
+
+'''
+freqs
+'''
+def gnomad_freqs(v,path_to_gnomad,mode='exome'):
+    v = clean_variant(v)
+    # pytabix does not support header yet. hard code it
+    header = ['chrom','pos','id','ref','alt','quality','filter','info']
+    chrom,pos,ref,alt = v.split('-')
+    if mode == 'exome':
+        file = os.path.join(path_to_gnomad,'exomes','vcf','gnomad.exomes.r2.0.1.sites.vcf.gz')
+    elif mode == 'genome':
+        file = os.path.join(path_to_gnomad,'genomes','vcf','gnomad.genomes.r2.0.1.sites.'+chrom+'.vcf.gz')
+    tb = tabix.open(file)
+    records = tb.query(chrom, int(pos)-1, int(pos))
+
+    for r in records:
+        if not r: return None
+        data = {a:b for a,b in zip(header,r)}
+        # find the variant
+        g_alts = data['alt'].split(',')
+        alt_ind = None
+        for ind,this_alt in enumerate(g_alts):
+            v_id = clean_variant('-'.join([data['chrom'],data['pos'],data['ref'],this_alt]))
+            if v_id == v:
+                alt_ind = ind
+
+        if alt_ind == None:
+            continue
+
+        # parse info
+        # no need for annotation?
+
+        info = data['info'].split(';CSQ=A')[0] # 1 for annotation
+        info = info.split(';')
+        info_dict = {}
+        for i in info:
+            if not '=' in i: continue
+            a,b = i.split('=')
+            b = b.split(',')
+            ind = min(alt_ind,len(b)-1)
+            b = b[ind]
+            # convert to number if possible
+            try:
+                if '.' in b:
+                    b = float(b)
+                else:
+                    b = int(b)
+            except ValueError:
+                pass
+            info_dict[a] = b
+        info_dict['FILTER'] = info_dict['AS_FilterStatus']
+        return info_dict
+                
+
+    return None

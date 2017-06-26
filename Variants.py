@@ -32,34 +32,58 @@ def _read_cadd(infile):
 '''
 result = {
     'v1':{
-        'genomes':{
-            'any_covered':
-            'data':
-        },
-        'exomes':{
-            'any_covered':
-            'data':
-        }
+        'gnomad_af':
+        'gnomad_ac':
+        'gnomad_hom_af':
+        'gnomad_hom_ac':
+        'gnomad_hemi_ac':
     }
 }
 '''
-def anno_gnomad(vars,varsome_key):
-    varsome = anno_varsome(vars,varsome_key)
+def anno_gnomad(vars,path_to_gnomad):
     result = {}
-    for k,v in varsome.items():
-        if 'error' in v:
-            logging.warning(v['error'])
+    null = {
+        'gnomad_af': None,
+        'gnomad_ac': None,
+        'gnomad_hom_af': None,
+        'gnomad_hom_ac': None,
+        'gnomad_hemi_ac': None,
+    }
+    for v in vars:
+        
+        if v.split('-')[0] not in VALID_CHROMOSOMES:
+            result[v] = null
             continue
-        result[k]={'genomes':{},'exomes':{}}
-
-        for m in ['exomes','genomes']:
-            key = 'gnomad_'+m
-            data = v[key]
-            result[k][m]['data'] = data
-            if data or v[key+'_coverage']:
-                result[k][m]['any_covered'] = True
-            else:
-                result[k][m]['any_covered'] = True
+        covs = {
+            'exome': gnomad_coverage(v,path_to_gnomad,mode='exome'),
+            'genome':gnomad_coverage(v,path_to_gnomad,mode='genome'),
+        }
+        freqs = {
+            'exome': gnomad_freqs(v,path_to_gnomad,mode='exome'),
+            'genome':gnomad_freqs(v,path_to_gnomad,mode='genome'),
+        }
+        if not freqs['exome'] and not freqs['genome'] and not covs['exome'] and not covs['genome']:
+            result[v] = null
+            continue
+        ac = hom_ac = af = hom_af = an = 0
+        hemi_ac = None
+        for m in ['exome', 'genome']:
+            if freqs[m]:
+                ac += freqs[m]['AC']
+                hom_ac += freqs[m]['Hom']
+                an += freqs[m]['AN']
+                if 'Hemi' in freqs[m]:
+                    hemi_ac = hemi_ac + freqs[m]['Hemi'] if hemi_ac != None else freqs[m]['Hemi']
+        if ac: af = ac / an
+        if hom_ac: hom_af = hom_ac * 2 / an
+        result[v] = {
+            'gnomad_af':af,
+            'gnomad_ac':ac,
+            'gnomad_hom_af':hom_af,
+            'gnomad_hom_ac':hom_ac,
+            'gnomad_hemi_ac':hemi_ac,
+            'gnomad_an':an,
+        }
     return result
 
 '''
@@ -174,13 +198,13 @@ class Variant(object):
 class for an array of variants
 '''
 class Variants:
-    def __init__(self, db_conn, vars=None, varsome_key=None, build='hg19'):
+    def __init__(self, db_conn, vars=None, path_to_gnomad=None, build='hg19'):
         # initiate db
         _initiate_db(db_conn)
         self.variants = vars
         self.build = build
         self.db_conn = db_conn
-        self.varsome_key = varsome_key
+        self.path_to_gnomad = path_to_gnomad
         self.cleaned_variants = {i:clean_variant(i) for i in vars}
         # as single Variant, use self._v for downstream annotation
         self._v = copy.copy(self.cleaned_variants)
@@ -308,8 +332,10 @@ class Variants:
     @property
     def gnomad(self):
         # Check local database first. If not,
-        #   use CommonFuncs to annotate exac, then store in database
+        #   use CommonFuncs to annotate gnomad, then store in database
         if getattr(self, '_gnomad', None) is None:
+            if not self.path_to_gnomad:
+                raise ValueError('Required to provide a path to gnomad for annotation')
             # check database
             db_c = self.db_conn.cursor()
             result = batch_query(db_c,'variants',list(self._v.values()))
@@ -328,8 +354,7 @@ class Variants:
                     new_vars[k] = v
             if new_vars:
                 print('querying gnomad')
-                new_result = anno_gnomad(list(new_vars.values()), self.varsome_key)
-                print(new_result)
+                new_result = anno_gnomad(list(new_vars.values()), self.path_to_gnomad)
                 # update database
                 update_db(
                            self.db_conn,
