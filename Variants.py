@@ -65,7 +65,7 @@ def anno_gnomad(vars,path_to_gnomad):
         if not freqs['exome'] and not freqs['genome'] and not covs['exome'] and not covs['genome']:
             result[v] = null
             continue
-        ac = hom_ac = af = hom_af = an = 0
+        ac = hom_ac = af = hom_af = an = 0.
         hemi_ac = None
         for m in ['exome', 'genome']:
             if freqs[m]:
