@@ -35,27 +35,28 @@ def _fetch_one(self,field):
     return db_hpo[field]
 
 class Hpo:
-    def __init__(self,db_conn,id):
+    def __init__(self,db_conn,id=None):
         _initiate_db(db_conn)
         self.db_conn = db_conn
         self._check_db()
         self.id = id
-        # alt id?
-        sql = 'SELECT id FROM hpo WHERE id=?'
-        db_c = db_conn.cursor()
-        db_c.execute(sql,(id,))
-        data = db_c.fetchone()
-        if data:
-            self._id = self.id
-        else:
-            #look into alt_id
-            sql = "SELECT id FROM hpo WHERE alt_id LIKE ?"
-            db_c.execute(sql,('%'+id+'%',))
+        if id:
+            # alt id?
+            sql = 'SELECT id FROM hpo WHERE id=?'
+            db_c = db_conn.cursor()
+            db_c.execute(sql,(id,))
             data = db_c.fetchone()
-            if not data:
-                msg = '%s cannot be recognised' % id
-                raise ValueError(msg)
-            self._id = data[0]
+            if data:
+                self._id = self.id
+            else:
+                #look into alt_id
+                sql = "SELECT id FROM hpo WHERE alt_id LIKE ?"
+                db_c.execute(sql,('%'+id+'%',))
+                data = db_c.fetchone()
+                if not data:
+                    msg = '%s cannot be recognised' % id
+                    raise ValueError(msg)
+                self._id = data[0]
     
     def _find_ancestors(self,id,anc,data):
         # construct_db helper function, to find all ancestors of a node
@@ -109,3 +110,13 @@ class Hpo:
         if getattr(self,'_genes',None) is None:
             self._genes = json.loads(_fetch_one(self,'genes'))
         return self._genes
+
+    def names_to_ids(self, names):
+        # translate an array of names to a dictionary of name => keys
+        db_c = self.db_conn.cursor()
+        result = batch_query(db_c,'HPO',names,pointer='name')
+        data = {}
+        for i in result:
+            temp = dict_factory(db_c, i)
+            data[temp['name']] = temp['id']
+        return data
