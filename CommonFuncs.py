@@ -38,7 +38,11 @@ def find_bases(chrom,start,end=None,build='hg19',strand=1):
             time.sleep(0.05)
             break
         except requests.HTTPError:
-            print('query ensembl connectionError, retry')
+            print('query ensembl HTTPError, retry')
+            attempt -= 1
+            time.sleep(2)
+        except requests.ConnectionError:
+            print('query ensembl ConnectionError, retry')
             attempt -= 1
             time.sleep(2)
     if r.status_code == 404: return None

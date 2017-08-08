@@ -53,7 +53,8 @@ def compare_dfs(df1, df2, key, fields):
         }
     old_keys = set(df1[key])
     new_keys = set(df2[key])
-    # len not right?
+    '''
+    # len not right? Not needed as some cnvs might span multiple genes and the ids might be repetitive
     bad = []
     if len(old_keys) != len(df1.index):
         bad.append('first')
@@ -62,6 +63,7 @@ def compare_dfs(df1, df2, key, fields):
     if bad:
         msg = "%s array's key column's elements have duplicates" % ' and '.join(bad)
         raise ValueError(msg)
+    '''
     # carry on
     # old and delete?
     die_keys = old_keys - new_keys
