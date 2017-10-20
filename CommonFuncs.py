@@ -36,7 +36,8 @@ def find_bases(chrom,start,end=None,build='hg19',strand=1):
         try:
             r = requests.get(server+ext, headers={'Content-Type':'application/json' })
             time.sleep(0.05)
-            break
+            if r.ok:
+                break
         except requests.HTTPError:
             print('query ensembl HTTPError, retry')
             attempt -= 1
@@ -46,8 +47,10 @@ def find_bases(chrom,start,end=None,build='hg19',strand=1):
             attempt -= 1
             time.sleep(2)
     if r.status_code == 404: return None
+    '''
     if not r.ok:
         return r.raise_for_status()
+    '''
     decoded = r.json()
     return str(decoded['seq'])
 
