@@ -197,7 +197,7 @@ class Variant(object):
 '''
 class for an array of variants
 '''
-class Variants:
+class Variants(object):
     def __init__(self, db_conn, vars=None, path_to_gnomad=None, build='hg19'):
         # initiate db
         _initiate_db(db_conn)
