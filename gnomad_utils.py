@@ -25,9 +25,9 @@ def coverage(vs,path_to_gnomad,mode,chrom,start,stop):
     result = {v:None for v in vs}
     vcf = None
     if mode == 'exome':
-        vcf = os.path.join(path_to_gnomad,'coverage','exomes','exacv2.chr'+chrom+'.cov.txt.gz')
+        vcf = os.path.join(path_to_gnomad,'exomes','coverage','exacv2.chr'+chrom+'.cov.txt.gz')
     elif mode == 'genome':
-        vcf = os.path.join(path_to_gnomad,'coverage','genomes','gnomad.chr'+chrom+'.cov.txt.gz')
+        vcf = os.path.join(path_to_gnomad,'genomes','coverage','gnomad.chr'+chrom+'.cov.txt.gz')
     else:
         msg = "mode only accepts 'exome' or 'genome'"
         raise ValueError(msg)
@@ -65,9 +65,9 @@ def freqs(vs,path_to_gnomad,mode,chrom,start,stop):
     # pytabix does not support header yet. hard code it
     header = ['chrom','pos','id','ref','alt','quality','filter','info']
     if mode == 'exome':
-        vcf = os.path.join(path_to_gnomad,'vcf','exomes','gnomad.exomes.r2.0.1.sites.vcf.gz')
+        vcf = os.path.join(path_to_gnomad,'exomes','vcf','gnomad.exomes.r2.0.1.sites.vcf.gz')
     elif mode == 'genome':
-        vcf = os.path.join(path_to_gnomad,'vcf','genomes','gnomad.genomes.r2.0.1.sites.'+chrom+'.vcf.gz')
+        vcf = os.path.join(path_to_gnomad,'genomes','vcf','gnomad.genomes.r2.0.1.sites.'+chrom+'.vcf.gz')
     result = {v:{} for v in vs}
     try:
         tb = pysam.TabixFile(vcf)
