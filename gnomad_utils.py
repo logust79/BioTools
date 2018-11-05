@@ -10,7 +10,7 @@ import sys
 import pysam
 import tabix
 import os
-import utils
+import CommonFuncs
 
 class BadVariantException(Exception): pass
 #path = '/cluster/project8/vyp/gnomad_data'
@@ -87,7 +87,7 @@ def freqs(vs,path_to_gnomad,mode,chrom,start,stop):
         alt_ind = None
         v_ids = []
         for ind,this_alt in enumerate(g_alts):
-            v_id = utils.clean_variant('-'.join([data['chrom'],data['pos'],data['ref'],this_alt]))
+            v_id = CommonFuncs.clean_variant('-'.join([data['chrom'],data['pos'],data['ref'],this_alt]))
             if v_id in vs:
                 v_ids.append((v_id, ind))
         if not v_ids:
@@ -127,7 +127,7 @@ query a single variant (in a list) at a time
 '''
 def overall_freqs(vs,path_to_gnomad):
     # get start, stop and chrom if block
-    chrom,start,stop = utils.get_chrom_start_stop(vs)
+    chrom,start,stop = CommonFuncs.get_chrom_start_stop(vs)
     result = {}
     null = {
         'gnomad_af': None,

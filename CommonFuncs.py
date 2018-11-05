@@ -6,19 +6,32 @@ Some self use and common functions
 #
 #
 import time
+from requests.exceptions import HTTPError
+import json
+import os
+import re
 import requests
 from bs4 import BeautifulSoup
 from collections import defaultdict
-import json
 import mygene
-import re
 import tabix
-import os
 
 '''
 constants
 '''
 VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
+
+'''
+get chrom, start, stop for a group of variants
+'''
+def get_chrom_start_stop(vs):
+    chrom = vs[0].split('-')[0]
+    vs_arrays = [v.split('-') for v in vs]
+    starts = [int(v[1]) for v in vs_arrays]
+    stops = [starts[i] + len(vs_arrays[i][2]) for i in range(len(vs))]
+    start = min(starts) - 1
+    stop = max(stops) + 1
+    return chrom,start,stop
 
 '''
 request ensembl for bases based on location
