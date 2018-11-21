@@ -4,6 +4,7 @@ query kaviar to get af. no hom_f is available
 from __future__ import division, print_function
 import gzip
 import pysam
+import CommonFuncs
 
 def get_variants_from_tbx(fetch, variants, header):
     variants_set = set(variants)
@@ -16,21 +17,28 @@ def get_variants_from_tbx(fetch, variants, header):
             field = field.split('=')
             info[field[0]] = field[1]
         for ind,alt in enumerate(record['ALT'].split(',')):
-            v_id = '-'.join([
+            v_id = CommonFuncs.clean_variant('-'.join([
                 record['CHROM'],
                 record['POS'],
                 record['REF'],
                 alt,
-            ])
+            ]))
             if v_id not in variants:
                 continue
             # get all info in 'INFO'
+            result[v_id] = result.get(v_id,{
+                'filter': None,
+                'af': None,
+                'ac': 0,
+                'an': 0
+            })
+
             result[v_id] = {
                     'filter': None,
-                    'af': float(info['AF'].split(',')[ind]),
-                    'ac': int(info['AC'].split(',')[ind]),
-                    'an': int(info['AN']),
+                    'ac': int(info['AC'].split(',')[ind]) + result[v_id]['ac'],
+                    'an': int(info['AN']) + result[v_id]['an'],
             }
+            result[v_id]['af'] = result[v_id]['ac'] / result[v_id]['an']
     return result
 
 def kaviar(variants, kaviar_vcf, group=True):
@@ -90,7 +98,7 @@ def kaviar(variants, kaviar_vcf, group=True):
     return result
 
 if __name__ == '__main__':
-    vs = ['1-10002-A-C','1-10003-A-T']
+    vs = ['1-10002-A-C','1-10003-A-T','1-884091-C-CACCCTGGTCCCCCTGGTCCCTTTGGCCCTGCACCTGGCTGG']
     vcf = '/cluster/project8/vyp/kaviar/Kaviar-160204-Public-hg19-trim.vcf.gz'
     result = kaviar(vs, vcf, group=True)
     print(result)
