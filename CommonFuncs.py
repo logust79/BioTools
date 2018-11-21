@@ -124,6 +124,59 @@ def clean_variant(v,build='hg19'):
             break
     return '-'.join([chrom,str(pos+b),ref[b:ref_e+1],alt[b:alt_e+1]])
 
+def find_start_of_repeat(string, start, length):
+    '''
+    string: GCAGAGAGAG
+    start: 5
+    length: 2 #GA
+    return 1 # the repeat starts from after 1:AG
+    ===
+    if no repeat, return start
+    '''
+    ind = start
+    result = string[:start]+string[start+length:]
+    while ind >= 0:
+        ind -= 1
+        if string[:ind] + string[ind+length:] != result:
+            return ind
+    return ind
+
+
+def find_leftmost_synonymous_variant(variant, human_ref_pysam, padding=200):
+    '''
+    Only necessary for indel!
+    find all synonymous variants given variant
+    padding is how far you would like to search left and right of the change
+    '''
+    mode,pattern = None,None
+    chrom, pos, ref, alt = variant.split('-')
+    pos = int(pos)+1
+    # removing commong base
+    if ref[0] == alt[0]:
+        ref = ref[1:]
+        alt = alt[1:]
+    if len(ref) and not alt:
+        pattern = ref
+        mode = 'del'
+    elif len(alt) and not ref:
+        pattern = alt
+        mode = 'in'
+    else:
+        # it's not indel, return
+        return variant
+    string = human_ref_pysam.fetch(chrom, pos-padding-1, pos+len(pattern)+padding-1)
+    ind = find_start_of_repeat(string, padding, len(pattern))
+    new_pos = pos - padding + ind
+    missing_base = string[ind]
+    pattern = string[ind+1:ind+len(pattern)+1]
+
+    if mode == 'del':
+        return '-'.join([chrom, str(new_pos), missing_base+pattern, missing_base])
+    elif mode == 'in':
+        return '-'.join([chrom, str(new_pos), missing_base, missing_base+pattern])
+    else:
+        msg = 'Cannot derive mode!'
+        raise ValueError(msg)
 '''
 use harvard's rest service to query ExAC_freq of a variant
 anno_exac('1-123-G-C')
