@@ -5,9 +5,9 @@ import os
 class CommonFuncsTestCase(unittest.TestCase):
     def test_clean_variant(self):
         case = clean_variant('13-95363811---GCG')
-        self.assertEqual(case,'13-95363810-G-GGCG')
+        self.assertEqual(case,'13-95363811-C-CGCG')
         case = clean_variant('13-95363811---GCG', 'hg38')
-        self.assertEqual(case,'13-95363810-A-AGCG')
+        self.assertEqual(case,'13-95363811-C-CGCG')
         case = clean_variant('2-220400050-TGTGTGTGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTACGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTAC-GGTGTGTGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTACGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTAC')
         self.assertEqual(case, '2-220400050-T-G')
         case = clean_variant('13-95363809-GG--')
