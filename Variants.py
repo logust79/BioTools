@@ -2,6 +2,8 @@ import logging
 import sqlite3
 from CommonFuncs import *
 from sqlite_utils import *
+import gnomad_utils
+import kaviar_utils
 import copy
 
 def _initiate_db(db_conn):
@@ -100,7 +102,7 @@ class Variant(object):
         # initiate db
         _initiate_db(db_conn)
         self.variant_id = variant_id if variant_id else logging.warning('Need variant_id')
-        self.cleaned_variant_id = clean_variant(variant_id)
+        self.cleaned_variant_id = find_leftmost_synonymous_variant(clean_variant(variant_id))
         self.build = build
         self.db_conn = db_conn
         # build not hg19? convert
@@ -205,7 +207,7 @@ class Variants(object):
         self.build = build
         self.db_conn = db_conn
         self.path_to_gnomad = path_to_gnomad
-        self.cleaned_variants = {i:clean_variant(i) for i in vars}
+        self.cleaned_variants = {i:find_leftmost_synonymous_variant(clean_variant(i)) for i in vars}
         # as single Variant, use self._v for downstream annotation
         self._v = copy.copy(self.cleaned_variants)
         if build != 'hg19':
@@ -354,7 +356,10 @@ class Variants(object):
                     new_vars[k] = v
             if new_vars:
                 print('querying gnomad')
-                new_result = anno_gnomad(list(new_vars.values()), self.path_to_gnomad)
+                # need to divide vars according to their chroms
+                new_result = {}
+                for chrom_vars in get_chrom_vars(new_vars.values()):
+                    new_result.update(gnomad_utils.overall_freqs(chrom_vars, self.path_to_gnomad))
                 # update database
                 update_db(
                            self.db_conn,

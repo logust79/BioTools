@@ -77,7 +77,7 @@ class Hpo:
             self.construct_db()
     def construct_db(self):
         # construct hpo database using the data/hpo.csv file
-        csvfile = os.path.join('data','hpo.csv')
+        csvfile = os.path.join(os.path.dirname(__file__),'data','hpo.csv')
         df = pandas.read_csv(csvfile)
         df.to_sql('hpo', self.db_conn, if_exists='replace', index=False)
     

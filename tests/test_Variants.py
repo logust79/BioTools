@@ -12,7 +12,7 @@ class VariantsTestCase(unittest.TestCase):
         self.db = sqlite3.connect(os.path.join('db','test.db'))
     def test_variant(self):
         case = Variant(self.db, '13-95363811---GCG')
-        self.assertEqual(parse_exac(case.exac), 0)
+        self.assertEqual(parse_exac(case.exac), 0.0003549875754348598)
         case = Variant(self.db, '2-219535328-T-G', 'hg38')
         self.assertEqual(case._v, '2-220400050-T-G')
         case = Variant(self.db, '2-220400050-T-G')

@@ -14,12 +14,30 @@ import requests
 from bs4 import BeautifulSoup
 from collections import defaultdict
 import mygene
-import tabix
 
 '''
 constants
 '''
 VALID_CHROMOSOMES = [str(i) for i in range(1,23)] + ['X','Y']
+
+'''
+divide variants according to their chrom and chunk size
+'''
+def get_chrom_vars(variants, chunk_size=1e5):
+    result = {}
+    for v in sorted(variants, key=lambda x: int(x.split('-')[1])):
+        chrom,pos,_,_ = v.split('-')
+        pos = int(pos)
+        if chrom in result:
+            if pos > result[chrom][-1]['start'] + chunk_size:
+                result[chrom].append({'start':pos, 'variants':[v]})
+            else:
+                result[chrom][-1]['variants'].append(v)
+        else:
+            result[chrom] = [{'start':pos, 'variants':[v]}]
+    for chrom, chunks in result.items():
+        for chunk in chunks:
+            yield chunk['variants']
 
 '''
 get chrom, start, stop for a group of variants
@@ -89,22 +107,28 @@ def liftover(v, frm, to):
     prints
     1-94512002-T-A
 '''
-def clean_variant(v,build='hg19'):
+def clean_variant(v,build='hg19',human_ref_pysam=None):
     # sometimes variant has funny format, which has more - than expected, such as 1-117122294---TCT.
-    #  use find_bases to fill in the gap
+    #  use find_bases to fill in the gap if human_ref_pysam is not provided
     if v.count('-') == 4:
         if v[-1] == '-':
             # deletion
             chrom,pos,ref,rubbish,rubbish = v.split('-')
             pos = int(pos)-1
-            common_base = find_bases(chrom,pos,build=build)
+            if human_ref_pysam:
+                common_base = human_ref_pysam.fetch(chrom, pos-1, pos)
+            else:
+                common_base = find_bases(chrom,pos,build=build)
             ref = common_base + ref
             alt = common_base
         else:
             # insertion
             chrom,pos,ref,rubbish,alt = v.split('-')
             pos = int(pos)
-            common_base = find_bases(chrom,pos,build=build)
+            if human_ref_pysam:
+                common_base = human_ref_pysam.fetch(chrom, pos-1, pos)
+            else:
+                common_base = find_bases(chrom,pos,build=build)
             ref = common_base
             alt = common_base + alt
     else:
@@ -142,11 +166,12 @@ def find_start_of_repeat(string, start, length):
     return ind
 
 
-def find_leftmost_synonymous_variant(variant, human_ref_pysam, padding=200):
+def find_leftmost_synonymous_variant(variant, padding=200, build='hg19', human_ref_pysam=None):
     '''
     Only necessary for indel!
     find all synonymous variants given variant
     padding is how far you would like to search left and right of the change
+    if human_ref_pysam is None, use find_base to query ensembl
     '''
     mode,pattern = None,None
     chrom, pos, ref, alt = variant.split('-')
@@ -164,7 +189,10 @@ def find_leftmost_synonymous_variant(variant, human_ref_pysam, padding=200):
     else:
         # it's not indel, return
         return variant
-    string = human_ref_pysam.fetch(chrom, pos-padding-1, pos+len(pattern)+padding-1)
+    if human_ref_pysam:
+        string = human_ref_pysam.fetch(chrom, pos-padding-1, pos+len(pattern)+padding-1)
+    else:
+        string = find_bases(chrom, pos-padding, pos+len(pattern)+padding, build=build)
     ind = find_start_of_repeat(string, padding, len(pattern))
     new_pos = pos - padding + ind
     missing_base = string[ind]
@@ -398,88 +426,3 @@ def check_ensemblId(ensemblId):
     else:
         return False
 
-'''
-gnomad annotation. Currently there's no API service. Relying on local gnomad files
-'''
-#path = '/media/jing/SEAGATE/db/gnomAD'
-#release = 'release-170228'
-
-'''
-coverage
-'''
-def gnomad_coverage(v,path_to_gnomad,mode='exome'):
-    v = clean_variant(v)
-    # pytabix does not support header yet. hard code it
-    header = ['chrom','pos','mean','median',1,5,10,15,20,25,30,50,100,]
-    chrom,pos,ref,alt = v.split('-')
-    if mode == 'exome':
-        file = os.path.join(path_to_gnomad,'exomes','coverage','exacv2.chr'+chrom+'.cov.txt.gz')
-    elif mode == 'genome':
-        file = os.path.join(path_to_gnomad,'genomes','coverage','gnomad.chr'+chrom+'.cov.txt.gz')
-    else:
-        msg = "mode only accepts 'exome' or 'genome'"
-        raise ValueError(msg)
-    tb = tabix.open(file)
-    r = tb.query(chrom, int(pos)-1, int(pos))
-    r = list(r)
-    if not r:
-        # not covered
-        return None
-    r = r[0]
-    return {a:b for a,b in zip(header,r)}
-
-'''
-freqs
-'''
-def gnomad_freqs(v,path_to_gnomad,mode='exome'):
-    v = clean_variant(v)
-    # pytabix does not support header yet. hard code it
-    header = ['chrom','pos','id','ref','alt','quality','filter','info']
-    chrom,pos,ref,alt = v.split('-')
-    if mode == 'exome':
-        file = os.path.join(path_to_gnomad,'exomes','vcf','gnomad.exomes.r2.0.1.sites.vcf.gz')
-    elif mode == 'genome':
-        file = os.path.join(path_to_gnomad,'genomes','vcf','gnomad.genomes.r2.0.1.sites.'+chrom+'.vcf.gz')
-    tb = tabix.open(file)
-    records = tb.query(chrom, int(pos)-1, int(pos))
-
-    for r in records:
-        if not r: return None
-        data = {a:b for a,b in zip(header,r)}
-        # find the variant
-        g_alts = data['alt'].split(',')
-        alt_ind = None
-        for ind,this_alt in enumerate(g_alts):
-            v_id = clean_variant('-'.join([data['chrom'],data['pos'],data['ref'],this_alt]))
-            if v_id == v:
-                alt_ind = ind
-
-        if alt_ind == None:
-            continue
-
-        # parse info
-        # no need for annotation?
-
-        info = data['info'].split(';CSQ=A')[0] # 1 for annotation
-        info = info.split(';')
-        info_dict = {}
-        for i in info:
-            if not '=' in i: continue
-            a,b = i.split('=')
-            b = b.split(',')
-            ind = min(alt_ind,len(b)-1)
-            b = b[ind]
-            # convert to number if possible
-            try:
-                if '.' in b:
-                    b = float(b)
-                else:
-                    b = int(b)
-            except ValueError:
-                pass
-            info_dict[a] = b
-        info_dict['FILTER'] = info_dict['AS_FilterStatus']
-        return info_dict
-                
-
-    return None
