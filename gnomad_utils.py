@@ -8,7 +8,6 @@ result = {variant:gnomads.get(maps[variant],None) for variant in maps}
 from __future__ import print_function, division
 import sys
 import pysam
-import tabix
 import os
 import CommonFuncs
 
