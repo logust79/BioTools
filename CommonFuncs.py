@@ -11,9 +11,7 @@ import json
 import os
 import re
 import requests
-from bs4 import BeautifulSoup
 from collections import defaultdict
-import mygene
 
 '''
 constants
@@ -271,6 +269,7 @@ result = anno_kaviar(vars)
 hg19
 '''
 def anno_kaviar(vars, chunk_size=100):
+    from bs4 import BeautifulSoup
     # collapse on chroms
     chroms = {} # {1:[{pos:123,ref:A,alt:T},]}
     for v in vars:
@@ -333,12 +332,15 @@ def anno_kaviar(vars, chunk_size=100):
     return result
 
 def my_gene(gene_id):
+    import mygene
     mg = mygene.MyGeneInfo()
     return mg.getgene(gene_id,fields='all')
 def my_genes(gene_ids):
+    import mygene
     mg = mygene.MyGeneInfo()
     return mg.getgenes(gene_ids,fields='all')
 def my_genes_by_symbol(symbols,species=None):
+    import mygene
     mg = mygene.MyGeneInfo()
     result = mg.querymany(symbols, scopes='symbol', species=species,fields='all')
     # which ones are not found
@@ -425,4 +427,136 @@ def check_ensemblId(ensemblId):
         return True
     else:
         return False
+
+def add_pop_freqs(infile, outfile, options):
+    '''
+    add pop freqs, such as gnomad, bravo and kaviar
+    '''
+    import pysam
+    import gzip
+    options['human_ref_pysam'] = pysam.FastaFile(options['human_ref'])
+    fields = []
+    if 'gnomad_path' in options['pop_freqs']:
+        fields.extend(['gnomad_af', 'gnomad_hom_f'])
+    if 'bravo_vcf' in options['pop_freqs']:
+        fields.extend(['bravo_af','bravo_hom_f'])
+    if 'kaviar_vcf' in options['pop_freqs']:
+        fields.append('kaviar_af')
+    line_cache = []
+    variant_cache = {}
+    header = []
+    with gzip.open(infile, 'r') as inf, \
+            gzip.open(outfile, 'w') as outf:
+        for line in inf:
+            if line.startswith('##'):
+                outf.write(line)
+            elif line.startswith('#'):
+                # add an INFO line
+                info_line = construct_pop_info(fields)
+                outf.write(info_line)
+                outf.write(line)
+                header = line[1:].rstrip().split('\t')
+            else:
+                # write to cache
+                line_cache.append(line)
+                row = line.split('\t')
+                for alt in row[4].split(','):
+                    v_id = utils.clean_variant(
+                            '-'.join([row[0],row[1],row[3],alt]),
+                            human_ref_pysam = options['human_ref_pysam']
+                    )
+                    variant_cache[v_id]={}
+
+                if len(line_cache) >= options['pop_freqs']['cache_size']:
+                    # dump cache
+                    pop_annotate(line_cache, variant_cache, header, fields, outf, options)
+                    # empty caches
+                    line_cache = []
+                    variant_cache = {}
+
+        # finally dump cache
+        if line_cache:
+            pop_annotate(line_cache, variant_cache, header, fields, outf, options)
+            line_cache = []
+            variant_cache = {}
+
+def pop_annotate(line_cache, variant_cache, header, fields, outf, options):
+    import gnomad_utils, bravo_utils, kaviar_utils
+    # annotate
+    # gnomad
+    if 'gnomad_path' in options['pop_freqs']:
+        gnomads = gnomad_utils.overall_freqs(
+                list(variant_cache.keys()),
+                options['pop_freqs']['gnomad_path']
+        )
+        for variant in variant_cache:
+            af = gnomads[variant]['gnomad_af']
+            if af is None:
+                af = ''
+            hom_f = gnomads[variant]['gnomad_hom_f']
+            if hom_f is None:
+                hom_f = ''
+            variant_cache[variant]['gnomad_af'] = af
+
+            variant_cache[variant]['gnomad_hom_f'] = hom_f
+
+    # bravo
+    if 'bravo_vcf' in options['pop_freqs']:
+        bravos = bravo_utils.bravo(
+                list(variant_cache.keys()),
+                options['pop_freqs']['bravo_vcf']
+        )
+        for variant in variant_cache:
+            if variant not in bravos:
+                variant_cache[variant]['bravo_af'] = ''
+                variant_cache[variant]['bravo_hom_f'] = ''
+            else:
+                variant_cache[variant]['bravo_af'] = \
+                    bravos[variant]['af']
+                variant_cache[variant]['bravo_hom_f'] = \
+                    bravos[variant]['Hom']*2 / bravos[variant]['an']
+    # kaviar
+    if 'kaviar_vcf' in options['pop_freqs']:
+        kaviars = kaviar_utils.kaviar(
+                list(variant_cache.keys()),
+                options['pop_freqs']['kaviar_vcf']
+        )
+        for variant in variant_cache:
+            if variant not in kaviars:
+                variant_cache[variant]['kaviar_af'] = ''
+            else:
+                variant_cache[variant]['kaviar_af'] = \
+                    kaviars[variant]['af']
+
+    for line in line_cache:
+        record = dict(zip(header, line.rstrip().split('\t')))
+        INFO = record['INFO']
+        pop_info = []
+        for alt in record['ALT'].split(','):
+            v_id = clean_variant('-'.join([
+                record['CHROM'],
+                record['POS'],
+                record['REF'],
+                alt,
+            ]), human_ref_pysam = options['human_ref_pysam'])
+            pop_info.append('|'.join(
+                [alt] + [str(variant_cache[v_id][f]) for f in fields]
+            ))
+        pop_info = 'POPF=' + ','.join(pop_info)
+        new_INFO = ';'.join([INFO, pop_info])
+        record['INFO'] = new_INFO
+        new_line = '\t'.join([record[h] for h in header]) + '\n'
+        outf.write(new_line)
+
+def construct_pop_info(fields):
+    info_line = (
+            '##INFO=<ID=POPF,Number=.,Type=String,Description="'
+            'Population frequency such as gnomAD and Bravo. '
+            'Format: Allele'
+    )
+    # add fields
+    info_line = '|'.join([info_line] + fields)
+    # closing
+    info_line += '">\n'
+    return info_line
 
