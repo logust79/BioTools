@@ -20,7 +20,7 @@ class GenesTestCase(unittest.TestCase):
         self.assertEqual(case.entrez_id, '24')
         self.assertEqual("{0:.3f}".format(case.mis_z), '-1.498')
         self.assertEqual(case.genomic_pos_hg19['start'], 94458393)
-        self.assertEqual(case.genomic_pos['start'], 93992835)
+        self.assertEqual(case.genomic_pos['start'], 93992834)
         self.assertTrue('STGD' in case.alias)
 
     def test_genes(self):
