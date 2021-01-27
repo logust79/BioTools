@@ -14,6 +14,12 @@ class CommonFuncsTestCase(unittest.TestCase):
         self.assertEqual(case, '13-95363808-CGG-C')
         case = clean_variant('1-28588-GT-GTTTGGTTT')
         self.assertEqual(case, '1-28589-T-TTTGGTTT')
+        case = clean_variant('1-206487440-GTTTTT-GTTT')
+        self.assertEqual(case, '1-206487440-GTT-G')
+        case = clean_variant('1-206487440-GATCATC-GATC')
+        self.assertEqual(case, '1-206487440-GATC-G')
+        case = clean_variant('1-206487439-CGATCATC-CGATC')
+        self.assertEqual(case, '1-206487440-GATC-G')
 
 
     def test_find_bases(self):

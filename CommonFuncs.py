@@ -136,14 +136,47 @@ def clean_variant(v,build='hg19',human_ref_pysam=None):
         ran = range(len(ref))
     else:
         ran = range(len(alt))
-    for b in ran:
-        if ref[b] != alt[b] or len(ref[b:]) == 1 or len(alt[b:]) == 1:
-            break
+
     if len(ref) == len(alt):
         for e in ran:
             ref_e = len(ref) - e - 1
             alt_e = len(alt) - e - 1
             if ref[ref_e] != alt[alt_e]: break
+    else:
+        # indel
+        '''
+        on shorter read, look from the end for repetitve patterns that can be used to trim the longer read until the rest of the reads are identical
+        '''
+        if len(ref) > len(alt):
+            longer = ref
+            shorter = alt
+        else:
+            longer = alt
+            shorter = ref
+        found = False
+        for length in range(1,len(shorter)):
+            pattern = shorter[-length:]
+            long_rest = longer[len(shorter)-length:]
+            if not len(long_rest) % len(pattern) and long_rest == pattern * (len(long_rest) // len(pattern)):
+                found = True
+                break
+
+        if found:
+            # how many of this patterns can be trimmed?
+            for trim_count in range(1, len(shorter)//len(pattern) + 2):
+                new_pattern = pattern * trim_count
+                if not (shorter.endswith(new_pattern) and longer.endswith(new_pattern)):
+                    break
+            length = length * (trim_count - 1)
+            ref_e = len(ref) - length - 1
+            alt_e = len(alt) - length - 1
+        else:
+            ref_e = len(ref) - 1
+            alt_e = len(alt) - 1
+
+    for b in ran:
+        if ref[b] != alt[b] or len(ref[b:ref_e+1]) == 1 or len(alt[b:alt_e+1]) == 1:
+            break
     else:
         ref_e = len(ref)
         alt_e = len(alt)
