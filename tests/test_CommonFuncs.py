@@ -20,6 +20,8 @@ class CommonFuncsTestCase(unittest.TestCase):
         self.assertEqual(case, '1-206487440-GATC-G')
         case = clean_variant('1-206487439-CGATCATC-CGATC')
         self.assertEqual(case, '1-206487440-GATC-G')
+        case = clean_variant('1-1000-TTTG-TGTTG')
+        self.assertEqual(case, '1-1001-TTG-GTTG')
 
 
     def test_find_bases(self):
