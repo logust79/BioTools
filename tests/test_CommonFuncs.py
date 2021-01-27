@@ -5,13 +5,16 @@ import os
 class CommonFuncsTestCase(unittest.TestCase):
     def test_clean_variant(self):
         case = clean_variant('13-95363811---GCG')
-        self.assertEqual(case,'13-95363811-C-CGCG')
+        self.assertEqual(case,'13-95363810-G-GGCG')
         case = clean_variant('13-95363811---GCG', 'hg38')
-        self.assertEqual(case,'13-95363811-C-CGCG')
+        self.assertEqual(case,'13-95363810-A-AGCG')
         case = clean_variant('2-220400050-TGTGTGTGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTACGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTAC-GGTGTGTGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTACGTGTGTGTGGGGGGTGGCTGTGTGACTCTGTGTGTAC')
         self.assertEqual(case, '2-220400050-T-G')
         case = clean_variant('13-95363809-GG--')
         self.assertEqual(case, '13-95363808-CGG-C')
+        case = clean_variant('1-28588-GT-GTTTGGTTT')
+        self.assertEqual(case, '1-28589-T-TTTGGTTT')
+
 
     def test_find_bases(self):
         case = find_bases('13', 95363809)

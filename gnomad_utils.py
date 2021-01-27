@@ -95,7 +95,7 @@ def freqs(vs,path_to_gnomad,mode,chrom,start,stop):
         # parse info
         # no need for annotation?
 
-        info = data['info'].split(';CSQ=A')[0] # 1 for annotation
+        info = data['info'].split(';CSQ=')[0] # 1 for annotation
         info = info.split(';')
         for i in info:
             if not '=' in i: continue
@@ -223,5 +223,17 @@ if __name__ == '__main__':
     p2g = '/cluster/project8/vyp/gnomad_data'
     #print(freqs(vs[1:-1],p2g,'genome','1',12140,165390))
     print(overall_freqs(vs[1:-1],p2g))
-    vs = ['1-55516888-G-GA','1-55516887-GG-GGA']
+    vs = ['1-12140-GCAT-C','1-55516888-G-GA','1-55516887-GG-GGA']
     print(overall_freqs(vs,p2g))
+    chrom,start,stop = CommonFuncs.get_chrom_start_stop(vs)
+    result = {}
+    covs = {
+        'exome': coverage(vs,p2g,'exome',chrom,start,stop),
+        'genome':coverage(vs,p2g,'genome',chrom,start,stop),
+    }
+    fs = {
+        'exome': freqs(vs,p2g,'exome',chrom,start,stop),
+        'genome':freqs(vs,p2g,'genome',chrom,start,stop),
+    }
+    print(fs['genome'][vs[0]])
+    print(covs['genome'][vs[0]])
