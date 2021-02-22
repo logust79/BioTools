@@ -13,7 +13,7 @@ class CommonFuncsTestCase(unittest.TestCase):
         case = clean_variant('13-95363809-GG--')
         self.assertEqual(case, '13-95363808-CGG-C')
         case = clean_variant('1-28588-GT-GTTTGGTTT')
-        self.assertEqual(case, '1-28589-T-TTTGGTTT')
+        self.assertEqual(case, '1-28588-G-GTTTGGTT')
         case = clean_variant('1-206487440-GTTTTT-GTTT')
         self.assertEqual(case, '1-206487440-GTT-G')
         case = clean_variant('1-206487440-GATCATC-GATC')
@@ -21,7 +21,7 @@ class CommonFuncsTestCase(unittest.TestCase):
         case = clean_variant('1-206487439-CGATCATC-CGATC')
         self.assertEqual(case, '1-206487440-GATC-G')
         case = clean_variant('1-1000-TTTG-TGTTG')
-        self.assertEqual(case, '1-1001-TTG-GTTG')
+        self.assertEqual(case, '1-1000-T-TG')
 
 
     def test_find_bases(self):
